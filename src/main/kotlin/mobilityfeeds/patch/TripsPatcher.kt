@@ -28,7 +28,7 @@ fun patchTrips(
     output.bufferedWriter().use { writer ->
         CSVPrinter(writer, format).use { printer ->
             trips.forEach { trip ->
-                val tripRouteType = brandByTrip.getValue(trip.id.id).gtfsExtended.value
+                val tripRouteType = brandByTrip.getValue(trip.id.id).extendedRouteType.value
                     .takeIf { it != routeTypeByRoute.getValue(trip.route.id.id) }
                 if (tripRouteType != null) patched++
                 printer.printRecord(

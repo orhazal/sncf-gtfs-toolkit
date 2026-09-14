@@ -1,9 +1,9 @@
-# sncf-gtfs-toolkit
+# SNCF GTFS Toolkit
 
 Patches the SNCF open data GTFS feed with information the feed does not carry on its own:
 
 1. **Transfers** (`transfers.txt`), computed from the SNCF transfer-time rules (IDH export), with `calendar_dates.txt` extended so that date-limited rules only apply on their dates.
-2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids.
+2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids, with a name built from the route id.
 
 The result is the original feed, unchanged except for those four files, written to `output/sncf_patched.zip`.
 
@@ -21,7 +21,7 @@ Both archives are downloaded on every run into `feeds/`.
 
 The rules and the feed do not describe things the same way, so a few conventions bridge them. Everything below is read from the feed itself.
 
-**Station.** Rules identify a station by its 7-digit UIC code. A GTFS stop point id ends with the 8-digit UIC code (`StopPoint:OCETGV INOUI-87391003`). Dropping the last digit gives the 7-digit code for every French station and almost every foreign one. The few foreign stations (Germany, Spain, Italy, Switzerland) where the rules use an unrelated code are listed in `unusual_uic_referential.properties` as an explicit 8-digit to 7-digit mapping.
+**Station.** Rules identify a station by its 7-digit UIC code. A GTFS stop point id ends with the 8-digit UIC code (`StopPoint:OCETGV INOUI-87391003`). Dropping the last digit gives the 7-digit code for every French station and almost every foreign one. The few foreign stations (Germany, Italy, Switzerland) where the rules use an unrelated code are listed in `unusual_uic_referential.properties` as an explicit 8-digit to 7-digit mapping.
 
 **Stop point.** A station has one stop point per brand or carrier serving it. The brand is the text between `OCE` and the UIC code in the stop point id: `TGV INOUI`, `OUIGO`, `Lyria`, `ICE`, `INTERCITES`, `INTERCITES de nuit`, `Train TER`, `Train` (OUIGO Train Classique), `TramTrain`, `Navette`, `Car TER`, `Car à réservation`. An unknown brand stops the run, because it means the feed format changed.
 
@@ -49,9 +49,13 @@ Each row carries exactly one criterion, given as an arrival/departure pair. Rows
 
 Resolution is the same for all three: take the set selected on the arrival side, the set selected on the departure side, and emit one transfer per (arrival element, departure element) pair. Mode and brand rules produce stop-to-stop transfers. RICS rules produce route-to-route transfers, since the route is what tells undertakings apart in GTFS.
 
-Brand matching is a case-insensitive "contains" with two exceptions:
-- `TER` must not match `INTERCITES` (which contains the letters TER), so it is excluded explicitly.
-- `OUIGO` also matches the `Train` brand, which is how OUIGO Train Classique is labelled in the feed.
+The rules label brands differently from the feed, so they are mapped explicitly. The IDH export uses four labels today: `ALL`, `OUIGO`, `TGV`, `TER`.
+
+| Rule label | Feed brands |
+|---|---|
+| `TER` | `Train TER`, `Car TER` (not `INTERCITES`, which happens to contain the letters) |
+| `OUIGO` | `OUIGO`, `Train` (OUIGO Train Classique) |
+| anything else | brands whose name contains the label, case-insensitive: `TGV` selects `TGV INOUI` |
 
 If either side selects nothing at that station, the rule produces no transfer.
 
@@ -126,17 +130,16 @@ GTFS `route_type` lives on the route, but an SNCF route can mix modes: a train l
 | Brand in stop id | Extended route type |
 |---|---|
 | `TGV INOUI`, `OUIGO`, `Lyria`, `ICE` | 101 (high speed rail) |
-| `INTERCITES` | 102 (long distance rail) |
+| `INTERCITES`, `Train` (OUIGO Train Classique) | 102 (long distance rail) |
 | `INTERCITES de nuit` | 105 (sleeper rail) |
 | `Train TER` | 106 (regional rail) |
-| `Train` (OUIGO Train Classique) | 100 (railway) |
 | `TramTrain` | 900 (tram) |
 | `Navette` | 711 (shuttle bus) |
 | `Car TER` | 701 (regional bus) |
 | `Car à réservation` | 715 (demand and response bus) |
 
 3. `routes.txt`: `route_type` becomes the extended type. A route served by one brand takes that brand's type. A route mixing brands keeps the family of its original `route_type`: type 2 (rail) served by `Train TER` and `Car TER` becomes 106, the rail one. Several brands in that family (`Navette` and `Car à réservation` on a bus route): the basic `route_type` is not precise enough to pick one, so the route keeps it and every trip gets a `trip_route_type`, logged as a warning. No brand in that family: the run stops, the feed changed shape.
-4. `trips.txt`: each trip takes the brand of the first stop point it serves. When its extended type differs from its route's patched `route_type` (the `Car TER` trips of that line), it is written in `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case. Otherwise the column is empty. [MOTIS](https://github.com/motis-project/motis) consumes it.
+4. `trips.txt`: each trip takes the brand of its stop points (a trip is served by one brand). When its extended type differs from its route's patched `route_type` (the `Car TER` trips of that line), it is written in `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case. Otherwise the column is empty. [MOTIS](https://github.com/motis-project/motis) consumes it.
 
 In the 2026-09-14 feed, 282 of 688 routes mix brands, every one of them a train brand plus a road brand on a `route_type` 2. The values are the extended route types used by Google and most routers.
 

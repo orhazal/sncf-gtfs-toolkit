@@ -31,10 +31,10 @@ fun patchRoutes(
 ): Map<String, Int> {
     val routeTypeByRoute = routes.associate { route ->
         val brands = brandsByRoute[route.id.id] ?: error("Route ${route.id.id} has no stop time")
-        val candidates = if (brands.size == 1) brands else brands.filter { it.gtfsExtended.basicRouteType == route.type }
+        val candidates = if (brands.size == 1) brands else brands.filter { it.extendedRouteType.basicRouteType == route.type }
 
         val routeType = when (candidates.size) {
-            1 -> candidates.single().gtfsExtended.value
+            1 -> candidates.single().extendedRouteType.value
             0 -> error("Route ${route.id.id} (route_type ${route.type}) mixes $brands, none refines its route_type")
             else -> {
                 logger.warn("[ROUTES] ${route.id.id} (route_type ${route.type}) mixes $brands in the same family, keeping route_type ${route.type}")

@@ -1,14 +1,8 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    kotlin("jvm") version "2.2.21"
+    kotlin("jvm") version "2.4.20"
     application
-}
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(25)
-    }
 }
 
 repositories {
@@ -23,16 +17,4 @@ dependencies {
 
 application {
     mainClass = "mobilityfeeds.MainKt"
-}
-
-kotlin {
-    compilerOptions {
-        jvmTarget = JvmTarget.JVM_24
-    }
-}
-
-// Toolchain JDK is 25 (runtime, needed to load onebusaway-gtfs 12.x Java-25 bytecode),
-// but Kotlin caps bytecode output at 24 — pin Java compile target to match.
-tasks.withType<JavaCompile> {
-    options.release = 24
 }

@@ -240,7 +240,7 @@ private fun areGtfsAndIdhBrandEquivalent(brandFromIdh: String, brandFromGtfs: Sn
     when (brandFromIdh) {
         "TER" -> brandFromGtfs in setOf(SncfBrand.TRAIN_TER, SncfBrand.CAR_TER)
         "OUIGO" -> brandFromGtfs in setOf(SncfBrand.OUIGO, SncfBrand.OUIGO_TRAIN_CLASSIQUE)
-        else -> brandFromGtfs.value.contains(brandFromIdh, true) // "TGV" matches "TGV INOUI"
+        else -> brandFromGtfs.stopIdBrand.contains(brandFromIdh, true) // "TGV" matches "TGV INOUI"
     }
 
 // Regroupe sur le tuple d'identité GTFS
