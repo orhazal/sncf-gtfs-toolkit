@@ -3,7 +3,7 @@
 Patches the SNCF open data GTFS feed with information the feed does not carry on its own:
 
 1. **Transfers** (`transfers.txt`), computed from the SNCF transfer-time rules (IDH export), with `calendar_dates.txt` extended so that date-limited rules only apply on their dates.
-2. **Route types** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, plus a `trip_route_type` on the trips that differ from their route (replacement buses on a train line).
+2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids.
 
 The result is the original feed, unchanged except for those four files, written to `output/sncf_patched.zip`.
 
@@ -27,7 +27,7 @@ The rules and the feed do not describe things the same way, so a few conventions
 
 **Mode.** Rail (`F`) or road (`R`). Read from the trip id, which embeds `_F:` or `_R:`.
 
-**RICS.** The railway undertaking code, for example `1187` for SNCF Voyageurs. It is the agency part of the trip id.
+**RICS.** The railway undertaking code, for example `1187` for SNCF Voyageurs. It is embedded in the trip id (`…F1187_F:…`), which is the source of truth: the route's `agency_id` can be SNCF's fallback `OCEdefault`, or another undertaking than the one running the trip (260 trips in the 2026-09-14 feed).
 
 **Train number.** The trip headsign, with leading zeros removed.
 
@@ -139,6 +139,17 @@ GTFS `route_type` lives on the route, but an SNCF route can mix modes: a train l
 4. `trips.txt`: each trip takes the brand of the first stop point it serves. When its extended type differs from its route's patched `route_type` (the `Car TER` trips of that line), it is written in `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case. Otherwise the column is empty. [MOTIS](https://github.com/motis-project/motis) consumes it.
 
 In the 2026-09-14 feed, 282 of 688 routes mix brands, every one of them a train brand plus a road brand on a `route_type` 2. The values are the extended route types used by Google and most routers.
+
+### Routes with the `OCEdefault` agency
+
+Some routes carry `OCEdefault` as `agency_id`, an SNCF placeholder that exists in `agency.txt` but designates nobody:
+
+```
+OCESN-87113001-87118000,OCEdefault,INCONNU,-,,3,,,
+OCESN-87415018-87411223,OCEdefault,INCONNU,-,,2,,,
+```
+
+The trips of those routes still carry their undertaking's RICS in the trip id. When every trip of such a route carries the same RICS and that RICS is a known agency, `routes.txt` gets it as `agency_id`. Otherwise the route keeps `OCEdefault` and a warning lists the RICS seen. In the 2026-09-14 feed, 39 routes are `OCEdefault`, their trips split 192 on `1187` and 4 on `5111`.
 
 ## Running
 

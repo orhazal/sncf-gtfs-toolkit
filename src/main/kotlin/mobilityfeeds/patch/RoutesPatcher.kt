@@ -9,13 +9,22 @@ import java.io.File
 
 private val logger = LoggerFactory.getLogger("routes")
 
-// Rewrites routes.txt with route_type refined to the extended type of the brand serving the route.
-// A route mixing brands (a train line and its replacement buses) takes the brand of its original route_type's family:
-// route_type 2 served by "Train TER" and "Car TER" becomes 106 (regional rail), the "Car TER" trips get a
-// trip_route_type in trips.txt. Several brands in that family ("Navette" and "Car à réservation" on a bus route):
-// the route keeps its original route_type and every trip gets a trip_route_type.
+private const val FALLBACK_AGENCY = "OCEdefault"
+
+// Rewrites routes.txt with:
+// - route_type refined to the extended type of the brand serving the route. A route mixing brands (a train line and its
+//   replacement buses) takes the brand of its original route_type's family: route_type 2 served by "Train TER" and "Car TER"
+//   becomes 106 (regional rail), the "Car TER" trips get a trip_route_type in trips.txt. Several brands in that family
+//   ("Navette" and "Car à réservation" on a bus route): the route keeps its original route_type and every trip gets a trip_route_type.
+// - agency_id replaced when it is SNCF's fallback "OCEdefault" and every trip of the route carries the same RICS in its id.
 // Returns the route_type written for every route.
-fun patchRoutes(routes: Collection<Route>, brandsByRoute: Map<String, Set<SncfBrand>>, output: File): Map<String, Int> {
+fun patchRoutes(
+    routes: Collection<Route>,
+    brandsByRoute: Map<String, Set<SncfBrand>>,
+    ricsCodesByRoute: Map<String, Set<String>>,
+    agencyIds: Set<String>,
+    output: File,
+): Map<String, Int> {
     val routeTypeByRoute = routes.associate { route ->
         val brands = brandsByRoute[route.id.id] ?: error("Route ${route.id.id} has no stop time")
         val candidates = if (brands.size == 1) brands else brands.filter { it.gtfsExtended.basicRouteType == route.type }
@@ -31,6 +40,19 @@ fun patchRoutes(routes: Collection<Route>, brandsByRoute: Map<String, Set<SncfBr
         route.id.id to routeType
     }
 
+    val agencyByRoute = routes.associate { route ->
+        val rics = ricsCodesByRoute[route.id.id]?.singleOrNull() // Si tous les trips de la route ont le même code RICS, on le récupère, sinon null
+        val agency = when {
+            route.agency.id != FALLBACK_AGENCY -> route.agency.id // No patch needed, valid RICS
+            rics != null && rics in agencyIds -> rics
+            else -> {
+                logger.warn("[ROUTES] ${route.id.id} keeps agency $FALLBACK_AGENCY, its trips carry multiple RICS codes ${ricsCodesByRoute[route.id.id]}, not a single known agency")
+                route.agency.id
+            }
+        }
+        route.id.id to agency
+    }
+
     val format = CSVFormat.DEFAULT.builder()
         .setRecordSeparator("\n") // SNCF GTFS files are LF
         .setHeader(
@@ -42,12 +64,13 @@ fun patchRoutes(routes: Collection<Route>, brandsByRoute: Map<String, Set<SncfBr
         CSVPrinter(writer, format).use { printer ->
             routes.forEach { route ->
                 printer.printRecord(
-                    route.id.id, route.agency.id, route.shortName, route.longName, route.desc,
+                    route.id.id, agencyByRoute.getValue(route.id.id), route.shortName, route.longName, route.desc,
                     routeTypeByRoute.getValue(route.id.id), route.url, route.color, route.textColor
                 )
             }
         }
     }
-    logger.info("${routes.size} routes written in ${output.path}, ${brandsByRoute.count { it.value.size > 1 }} mixing several brands")
+    val patchedAgencies = routes.count { it.agency.id == FALLBACK_AGENCY && agencyByRoute.getValue(it.id.id) != FALLBACK_AGENCY }
+    logger.info("${routes.size} routes written in ${output.path}, ${brandsByRoute.count { it.value.size > 1 }} mixing several brands, $patchedAgencies $FALLBACK_AGENCY agencies replaced")
     return routeTypeByRoute
 }

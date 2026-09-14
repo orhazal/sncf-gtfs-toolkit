@@ -44,6 +44,8 @@ fun main() {
     val routeTypeByRoute = patchRoutes(
         routes = gtfsStore.allRoutes,
         brandsByRoute = indexes.brandsByRoute,
+        ricsCodesByRoute = indexes.ricsCodesByRoute,
+        agencyIds = gtfsStore.allAgencies.map { it.id }.toSet(),
         output = routesFile
     )
 

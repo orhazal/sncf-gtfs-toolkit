@@ -6,7 +6,7 @@ import java.time.LocalDate
 import java.util.EnumMap
 import java.util.Properties
 
-private val TRIP_ID_MODE_REGEX = Regex("""\d{4}_([FR]):""")
+private val TRIP_ID_REGEX = Regex("""(\d{4})_([FR]):""") // RICS, mode
 private val STOP_POINT_REGEX = Regex("""^StopPoint:OCE(.+)-\d{8}$""")
 
 // Built once from the GTFS store; each patcher picks the indexes it needs.
@@ -19,6 +19,7 @@ class GtfsIndexes(
     val stopAndTripByTrainNumberByUic7: Map<String, Map<String, Set<Pair<String, String>>>>,
     val brandByTrip: Map<String, SncfBrand>,
     val brandsByRoute: Map<String, Set<SncfBrand>>,
+    val ricsCodesByRoute: Map<String, Set<String>>,
 ) {
     val uic7Codes: Set<String> get() = stopsByModeByUic7.keys
 }
@@ -38,16 +39,15 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
     val stopAndTripByTrainNumberByUic7 = HashMap<String, HashMap<String, MutableSet<Pair<String, String>>>>()
     val brandByTrip = HashMap<String, SncfBrand>()
     val brandsByRoute = HashMap<String, MutableSet<SncfBrand>>()
+    val ricsCodesByRoute = HashMap<String, MutableSet<String>>()
 
     for (stopTime in gtfsStore.allStopTimes) {
         val tripId = stopTime.trip.id.id
         val routeId = stopTime.trip.route.id.id
         val stopId = stopTime.stop.id.id
-        val rics = stopTime.trip.id.agencyId
-
-        val mode = TRIP_ID_MODE_REGEX.find(tripId)?.groupValues?.get(1)
-            ?.let { Mode.valueOf(it) }
-            ?: error("Mode always exists")
+        // The route's agency_id can be "OCEdefault": the trip id carries the RICS actually running the trip
+        val (rics, modeLetter) = TRIP_ID_REGEX.find(tripId)?.destructured ?: error("Trip id format changed: $tripId, review immediately")
+        val mode = Mode.valueOf(modeLetter)
 
         val stopType = STOP_POINT_REGEX.find(stopId)?.groupValues?.get(1)
             ?: error("Stop id format changed: $stopId, review immediately")
@@ -78,6 +78,7 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
 
         brandByTrip.putIfAbsent(tripId, brandFromStop)
         brandsByRoute.computeIfAbsent(routeId) { LinkedHashSet() }.add(brandFromStop)
+        ricsCodesByRoute.computeIfAbsent(routeId) { LinkedHashSet() }.add(rics)
     }
 
     return GtfsIndexes(
@@ -89,6 +90,7 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
         stopAndTripByTrainNumberByUic7 = stopAndTripByTrainNumberByUic7,
         brandByTrip = brandByTrip,
         brandsByRoute = brandsByRoute,
+        ricsCodesByRoute = ricsCodesByRoute,
     )
 }
 
