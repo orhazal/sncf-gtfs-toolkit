@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import mobilityfeeds.gtfs.getGtfsStore
 import mobilityfeeds.gtfs.writeGtfsWithReplacements
 import mobilityfeeds.patch.patchCalendarDates
+import mobilityfeeds.patch.patchRoutes
 import mobilityfeeds.patch.patchTransfers
 import mobilityfeeds.patch.patchTrips
 import mobilityfeeds.sncf.buildIndexes
@@ -20,6 +21,7 @@ private val httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redi
 private val outputPath = File("output")
 private val transfersFile = File(outputPath, "transfers.txt")
 private val calendarDatesFile = File(outputPath, "calendar_dates.txt")
+private val routesFile = File(outputPath, "routes.txt")
 private val tripsFile = File(outputPath, "trips.txt")
 private val patchedGtfsFile = File(outputPath, "sncf_patched.zip")
 
@@ -39,7 +41,18 @@ fun main() {
     val indexes = buildIndexes(gtfsStore, getUicReferential())
 
     outputPath.mkdirs()
-    val datesByNewServiceId = patchTransfers(indexes, sncfRulesZip, transfersFile)
+    val routeTypeByRoute = patchRoutes(
+        routes = gtfsStore.allRoutes,
+        brandsByRoute = indexes.brandsByRoute,
+        output = routesFile
+    )
+
+    val datesByNewServiceId = patchTransfers(
+        indexes = indexes,
+        sncfRulesZip = sncfRulesZip,
+        output = transfersFile
+    )
+
     patchCalendarDates(
         gtfsZip = gtfsZip,
         calendarDatesCount = gtfsStore.allCalendarDates.size,
@@ -49,13 +62,15 @@ fun main() {
 
     patchTrips(
         trips = gtfsStore.allTrips,
-        brandCarrierByTrip = indexes.brandCarrierByTrip,
+        brandByTrip = indexes.brandByTrip,
+        routeTypeByRoute = routeTypeByRoute,
         output = tripsFile
     )
 
     writeGtfsWithReplacements(
         sourceGtfs = gtfsZip,
         replacements = mapOf(
+            "routes.txt" to routesFile,
             "transfers.txt" to transfersFile,
             "calendar_dates.txt" to calendarDatesFile,
             "trips.txt" to tripsFile,

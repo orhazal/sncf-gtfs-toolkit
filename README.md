@@ -3,9 +3,9 @@
 Patches the SNCF open data GTFS feed with information the feed does not carry on its own:
 
 1. **Transfers** (`transfers.txt`), computed from the SNCF transfer-time rules (IDH export), with `calendar_dates.txt` extended so that date-limited rules only apply on their dates.
-2. **Route type per trip** (`trips.txt`), a `trip_route_type` column derived from the brand or carrier operating each trip.
+2. **Route types** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, plus a `trip_route_type` on the trips that differ from their route (replacement buses on a train line).
 
-The result is the original feed, unchanged except for those three files, written to `output/sncf_patched.zip`.
+The result is the original feed, unchanged except for those four files, written to `output/sncf_patched.zip`.
 
 ## Inputs
 
@@ -116,14 +116,14 @@ Rules referring to a station that is not in the feed are dropped before anything
 
 Route and trip columns are only filled by the rule kind that produced the row (RICS rules fill routes, train rules fill trips). `service_id` is only filled by train rules.
 
-## Use case 2: route type per trip
+## Use case 2: route types
 
-GTFS `route_type` lives on the route, but an SNCF route can mix modes: a train line and the replacement buses running on it share the same route, for example. The mode is only visible on the stop points a trip uses, so it is recovered per trip and written as `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case (a trip whose vehicle type differs from its route's). [MOTIS](https://github.com/motis-project/motis) consumes it.
+GTFS `route_type` lives on the route, but an SNCF route can mix modes: a train line and the replacement buses running on it share the same route. The mode is only visible on the stop points, so it is recovered from them, at route level and at trip level.
 
-1. For each trip, take the brand of the first stop point it serves.
-2. Map that brand to an extended route type:
+1. For each route, collect the brands of every stop point served by its trips.
+2. Map brands to extended route types:
 
-| Brand in stop id | `trip_route_type` |
+| Brand in stop id | Extended route type |
 |---|---|
 | `TGV INOUI`, `OUIGO`, `Lyria`, `ICE` | 101 (high speed rail) |
 | `INTERCITES` | 102 (long distance rail) |
@@ -135,9 +135,10 @@ GTFS `route_type` lives on the route, but an SNCF route can mix modes: a train l
 | `Car TER` | 701 (regional bus) |
 | `Car à réservation` | 715 (demand and response bus) |
 
-3. `trips.txt` is rewritten with its original columns plus `trip_route_type`.
+3. `routes.txt`: `route_type` becomes the extended type. A route served by one brand takes that brand's type. A route mixing brands keeps the family of its original `route_type`: type 2 (rail) served by `Train TER` and `Car TER` becomes 106, the rail one. Several brands in that family (`Navette` and `Car à réservation` on a bus route): the basic `route_type` is not precise enough to pick one, so the route keeps it and every trip gets a `trip_route_type`, logged as a warning. No brand in that family: the run stops, the feed changed shape.
+4. `trips.txt`: each trip takes the brand of the first stop point it serves. When its extended type differs from its route's patched `route_type` (the `Car TER` trips of that line), it is written in `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case. Otherwise the column is empty. [MOTIS](https://github.com/motis-project/motis) consumes it.
 
-The column is filled for every trip, not only the ones differing from their route. The values are the extended route types used by Google and most routers.
+In the 2026-09-14 feed, 282 of 688 routes mix brands, every one of them a train brand plus a road brand on a `route_type` 2. The values are the extended route types used by Google and most routers.
 
 ## Running
 
@@ -147,7 +148,7 @@ Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
 ./gradlew run
 ```
 
-Downloads go to `feeds/`, results to `output/`: the three patched files and `sncf_patched.zip`.
+Downloads go to `feeds/`, results to `output/`: the four patched files and `sncf_patched.zip`.
 
 ## License
 

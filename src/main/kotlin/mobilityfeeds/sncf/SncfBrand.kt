@@ -2,8 +2,8 @@ package mobilityfeeds.sncf
 
 import mobilityfeeds.gtfs.GtfsExtendedRouteType
 
-// Brand or carrier as found in SNCF stop point ids (StopPoint:OCE<brand>-<uic8>), mapped to a GTFS extended route type
-enum class SncfRouteType(
+// Brand as found in SNCF stop point ids (StopPoint:OCE<brand>-<uic8>), mapped to a GTFS extended route type
+enum class SncfBrand(
     val value: String,
     val gtfsExtended: GtfsExtendedRouteType,
 ) {
@@ -14,7 +14,7 @@ enum class SncfRouteType(
     INTERCITES("INTERCITES", GtfsExtendedRouteType.LONG_DISTANCE_TRAINS),
     INTERCITES_DE_NUIT("INTERCITES de nuit", GtfsExtendedRouteType.SLEEPER_RAIL_SERVICE),
     TRAIN_TER("Train TER", GtfsExtendedRouteType.REGIONAL_RAIL_SERVICE),
-    OUIGO_TRAIN_CLASSIQUE("Train", GtfsExtendedRouteType.RAILWAY_SERVICE),
+    OUIGO_TRAIN_CLASSIQUE("Train", GtfsExtendedRouteType.LONG_DISTANCE_TRAINS),
     TRAMTRAIN("TramTrain", GtfsExtendedRouteType.TRAM_SERVICE),
     NAVETTE("Navette", GtfsExtendedRouteType.SHUTTLE_BUS),
     CAR_TER("Car TER", GtfsExtendedRouteType.REGIONAL_BUS_SERVICE),
@@ -23,6 +23,6 @@ enum class SncfRouteType(
 
     companion object {
         private val byValue = entries.associateBy { it.value.lowercase() }
-        fun fromValue(v: String): SncfRouteType = byValue[v.lowercase()] ?: UNKNOWN
+        fun fromValue(v: String): SncfBrand = byValue[v.lowercase()] ?: UNKNOWN
     }
 }

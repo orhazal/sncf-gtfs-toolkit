@@ -1,6 +1,6 @@
 package mobilityfeeds.patch
 
-import mobilityfeeds.sncf.SncfRouteType
+import mobilityfeeds.sncf.SncfBrand
 import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.onebusaway.gtfs.model.Trip
@@ -9,8 +9,14 @@ import java.io.File
 
 private val logger = LoggerFactory.getLogger("trips")
 
-// Rewrites trips.txt with an extra trip_route_type column (GTFS extended route type per trip)
-fun patchTrips(trips: Collection<Trip>, brandCarrierByTrip: Map<String, SncfRouteType>, output: File) {
+// Rewrites trips.txt with an extra trip_route_type column (MBTA extension), filled only when the trip's brand
+// differs from its route's patched route_type (a replacement bus on a train line)
+fun patchTrips(
+    trips: Collection<Trip>,
+    brandByTrip: Map<String, SncfBrand>,
+    routeTypeByRoute: Map<String, Int>,
+    output: File,
+) {
     val format = CSVFormat.DEFAULT.builder()
         .setRecordSeparator("\n") // SNCF GTFS files are LF
         .setHeader(
@@ -18,16 +24,20 @@ fun patchTrips(trips: Collection<Trip>, brandCarrierByTrip: Map<String, SncfRout
             "block_id", "shape_id", "trip_route_type"
         )
         .get()
+    var patched = 0
     output.bufferedWriter().use { writer ->
         CSVPrinter(writer, format).use { printer ->
             trips.forEach { trip ->
+                val tripRouteType = brandByTrip.getValue(trip.id.id).gtfsExtended.value
+                    .takeIf { it != routeTypeByRoute.getValue(trip.route.id.id) }
+                if (tripRouteType != null) patched++
                 printer.printRecord(
                     trip.route.id.id, trip.serviceId.id, trip.id.id,
                     trip.tripHeadsign, trip.directionId, trip.blockId, trip.shapeId?.id,
-                    brandCarrierByTrip[trip.id.id]!!.gtfsExtended.value
+                    tripRouteType
                 )
             }
         }
     }
-    logger.info("${trips.size} trips written in ${output.path}")
+    logger.info("${trips.size} trips written in ${output.path}, $patched with a trip_route_type differing from their route")
 }

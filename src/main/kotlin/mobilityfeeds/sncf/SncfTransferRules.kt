@@ -41,7 +41,7 @@ sealed class StationConnection(
         departureUic: String,
     ) : StationConnection(minDelay, arrivalUic, departureUic)
 
-    class ByBrandCarrier(
+    class ByBrand(
         val arrivalConnectionType: String,
         val departureConnectionType: String,
         minDelay: Int,
@@ -51,7 +51,7 @@ sealed class StationConnection(
 }
 
 enum class ConnectionType {
-    BY_MODE, BY_RICS, BY_BRAND_CARRIER
+    BY_MODE, BY_RICS, BY_BRAND
 }
 
 enum class Mode {
@@ -157,7 +157,7 @@ fun loadSncfTransferRules(gtfsStops: Set<String>, feedDates: ClosedRange<LocalDa
                                     arrivalUic = arrivalUic,
                                     departureUic = departureUic,
                                 )
-                                ConnectionType.BY_BRAND_CARRIER -> StationConnection.ByBrandCarrier(
+                                ConnectionType.BY_BRAND -> StationConnection.ByBrand(
                                     arrivalConnectionType = arrivalConnectionType!!,
                                     departureConnectionType = departureConnectionType!!,
                                     minDelay = minDelay,
@@ -213,7 +213,7 @@ private fun getAndValidateStationConnectionType(
     return when {
         bothModesSet -> ConnectionType.BY_MODE
         bothRicsSet -> ConnectionType.BY_RICS
-        bothConnectionTypesSet -> ConnectionType.BY_BRAND_CARRIER
+        bothConnectionTypesSet -> ConnectionType.BY_BRAND
         else -> error("Unreachable after validation")
     }
 }

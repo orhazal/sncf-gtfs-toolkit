@@ -5,6 +5,7 @@ import org.apache.commons.csv.CSVPrinter
 import org.slf4j.LoggerFactory
 import mobilityfeeds.sncf.GtfsIndexes
 import mobilityfeeds.sncf.Mode
+import mobilityfeeds.sncf.SncfBrand
 import mobilityfeeds.sncf.StationConnection
 import mobilityfeeds.sncf.TrainConnection
 import mobilityfeeds.sncf.loadSncfTransferRules
@@ -52,7 +53,7 @@ fun patchTransfers(indexes: GtfsIndexes, sncfRulesZip: File, output: File): Map<
         when (stationConnection) {
             is StationConnection.ByMode -> transfers.addAll(processByModeConnection(stationConnection, indexes.stopsByModeByUic7))
             is StationConnection.ByRics -> transfers.addAll(processByRicsConnection(stationConnection, indexes.stopAndRouteByRicsByUic7))
-            is StationConnection.ByBrandCarrier -> transfers.addAll(processByBrandCarrierConnection(stationConnection, indexes.stopByTypeByUic7))
+            is StationConnection.ByBrand -> transfers.addAll(processByBrandConnection(stationConnection, indexes.stopByBrandByUic7))
         }
     }
     // For Export_TRAIN_CONNECTION_TIMES.csv
@@ -182,23 +183,23 @@ private fun processByRicsConnection(connection: StationConnection.ByRics, stopAn
     return transfers
 }
 
-private fun processByBrandCarrierConnection(connection: StationConnection.ByBrandCarrier, stopByTypeByUic7: Map<String, Map<String, String>>): Set<Transfer> {
-    val isFromAllBrandCarriers = connection.arrivalConnectionType.equals("ALL", true)
-    val isToAllBrandCarriers = connection.departureConnectionType.equals("ALL", true)
+private fun processByBrandConnection(connection: StationConnection.ByBrand, stopByBrandByUic7: Map<String, Map<SncfBrand, String>>): Set<Transfer> {
+    val isFromAllBrands = connection.arrivalConnectionType.equals("ALL", true)
+    val isToAllBrands = connection.departureConnectionType.equals("ALL", true)
 
-    val fromStops = if (isFromAllBrandCarriers) {
-        stopByTypeByUic7[connection.arrivalUic]?.values?.toSet()
+    val fromStops = if (isFromAllBrands) {
+        stopByBrandByUic7[connection.arrivalUic]?.values?.toSet()
     } else {
-        stopByTypeByUic7[connection.arrivalUic]?.entries
-            ?.filter { areGtfsAndIdhBrandCarrierEquivalent(connection.arrivalConnectionType, it.key) }
+        stopByBrandByUic7[connection.arrivalUic]?.entries
+            ?.filter { areGtfsAndIdhBrandEquivalent(connection.arrivalConnectionType, it.key) }
             ?.map { it.value }
     } ?: emptySet()
 
-    val toStops = if (isToAllBrandCarriers) {
-        stopByTypeByUic7[connection.departureUic]?.values?.toSet()
+    val toStops = if (isToAllBrands) {
+        stopByBrandByUic7[connection.departureUic]?.values?.toSet()
     } else {
-        stopByTypeByUic7[connection.departureUic]?.entries
-            ?.filter { areGtfsAndIdhBrandCarrierEquivalent(connection.departureConnectionType, it.key) }
+        stopByBrandByUic7[connection.departureUic]?.entries
+            ?.filter { areGtfsAndIdhBrandEquivalent(connection.departureConnectionType, it.key) }
             ?.map { it.value }
     } ?: emptySet()
 
@@ -206,7 +207,7 @@ private fun processByBrandCarrierConnection(connection: StationConnection.ByBran
         return emptySet()
     }
 
-    val priority = priorityOf(isFromAllBrandCarriers, isToAllBrandCarriers)
+    val priority = priorityOf(isFromAllBrands, isToAllBrands)
     val (transferType, minTransferTime) = gtfsTransfer(connection.minDelay)
 
     val transfers = LinkedHashSet<Transfer>(fromStops.size * toStops.size)
@@ -235,11 +236,11 @@ private fun priorityOf(fromAll: Boolean, toAll: Boolean): PrioritySource = when 
     else -> PrioritySource.ONE_TO_ONE
 }
 
-private fun areGtfsAndIdhBrandCarrierEquivalent(brandCarrierFromIdh: String, brandCarrierFromGtfs: String): Boolean =
-    when (brandCarrierFromIdh) {
-        "TER" -> !brandCarrierFromGtfs.contains("INTERCITES") && brandCarrierFromGtfs.contains(brandCarrierFromIdh, true) // Workaround pour TER inclus dans IN(TER)CITES
-        "OUIGO" -> setOf("OUIGO", "Train").contains(brandCarrierFromGtfs)  // Train = OUIGO Train Classique
-        else -> brandCarrierFromGtfs.contains(brandCarrierFromIdh, true)
+private fun areGtfsAndIdhBrandEquivalent(brandFromIdh: String, brandFromGtfs: SncfBrand): Boolean =
+    when (brandFromIdh) {
+        "TER" -> brandFromGtfs in setOf(SncfBrand.TRAIN_TER, SncfBrand.CAR_TER)
+        "OUIGO" -> brandFromGtfs in setOf(SncfBrand.OUIGO, SncfBrand.OUIGO_TRAIN_CLASSIQUE)
+        else -> brandFromGtfs.value.contains(brandFromIdh, true) // "TGV" matches "TGV INOUI"
     }
 
 // Regroupe sur le tuple d'identité GTFS

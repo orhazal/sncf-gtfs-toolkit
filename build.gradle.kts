@@ -16,9 +16,9 @@ repositories {
 }
 
 dependencies {
-    implementation("org.onebusaway:onebusaway-gtfs:14.0.0")
+    implementation("org.onebusaway:onebusaway-gtfs:14.2.3")
     implementation("org.apache.commons:commons-csv:1.14.1")
-    runtimeOnly("ch.qos.logback:logback-classic:1.5.34")
+    runtimeOnly("ch.qos.logback:logback-classic:1.6.3")
 }
 
 application {

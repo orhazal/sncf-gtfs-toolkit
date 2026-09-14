@@ -3,6 +3,7 @@ package mobilityfeeds.sncf
 import org.onebusaway.gtfs.impl.GtfsDaoImpl
 import org.onebusaway.gtfs.model.calendar.ServiceDate
 import java.time.LocalDate
+import java.util.EnumMap
 import java.util.Properties
 
 private val TRIP_ID_MODE_REGEX = Regex("""\d{4}_([FR]):""")
@@ -14,9 +15,10 @@ class GtfsIndexes(
     val nextUsableServiceId: String,
     val stopsByModeByUic7: Map<String, Map<Mode, Set<String>>>,
     val stopAndRouteByRicsByUic7: Map<String, Map<String, Set<Pair<String, String>>>>,
-    val stopByTypeByUic7: Map<String, Map<String, String>>, // Train is OUIGO Classique
+    val stopByBrandByUic7: Map<String, Map<SncfBrand, String>>,
     val stopAndTripByTrainNumberByUic7: Map<String, Map<String, Set<Pair<String, String>>>>,
-    val brandCarrierByTrip: Map<String, SncfRouteType>,
+    val brandByTrip: Map<String, SncfBrand>,
+    val brandsByRoute: Map<String, Set<SncfBrand>>,
 ) {
     val uic7Codes: Set<String> get() = stopsByModeByUic7.keys
 }
@@ -32,9 +34,10 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
     // stop_times.txt
     val stopsByModeByUic7 = HashMap<String, HashMap<Mode, MutableSet<String>>>()
     val stopAndRouteByRicsByUic7 = HashMap<String, HashMap<String, MutableSet<Pair<String, String>>>>()
-    val stopByTypeByUic7 = HashMap<String, HashMap<String, String>>()
+    val stopByBrandByUic7 = HashMap<String, EnumMap<SncfBrand, String>>() // EnumMap: iterated in the patcher, enum hash order varies per run
     val stopAndTripByTrainNumberByUic7 = HashMap<String, HashMap<String, MutableSet<Pair<String, String>>>>()
-    val brandCarrierByTrip = HashMap<String, SncfRouteType>()
+    val brandByTrip = HashMap<String, SncfBrand>()
+    val brandsByRoute = HashMap<String, MutableSet<SncfBrand>>()
 
     for (stopTime in gtfsStore.allStopTimes) {
         val tripId = stopTime.trip.id.id
@@ -49,8 +52,8 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
         val stopType = STOP_POINT_REGEX.find(stopId)?.groupValues?.get(1)
             ?: error("Stop id format changed: $stopId, review immediately")
 
-        val typedStopType = SncfRouteType.fromValue(stopType)
-        if (typedStopType == SncfRouteType.UNKNOWN) {
+        val brandFromStop = SncfBrand.fromValue(stopType)
+        if (brandFromStop == SncfBrand.UNKNOWN) {
             error("Careful, stop type not matched for $stopType, a new one?")
         }
 
@@ -67,13 +70,14 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
             .computeIfAbsent(rics) { HashSet() }
             .add(routeId to stopId)
 
-        stopByTypeByUic7.computeIfAbsent(uic7) { HashMap() }[stopType] = stopId
+        stopByBrandByUic7.computeIfAbsent(uic7) { EnumMap(SncfBrand::class.java) }[brandFromStop] = stopId
 
         stopAndTripByTrainNumberByUic7.computeIfAbsent(uic7) { HashMap() }
             .computeIfAbsent(trainNumber) { HashSet() }
             .add(tripId to stopId)
 
-        brandCarrierByTrip.putIfAbsent(tripId, typedStopType)
+        brandByTrip.putIfAbsent(tripId, brandFromStop)
+        brandsByRoute.computeIfAbsent(routeId) { LinkedHashSet() }.add(brandFromStop)
     }
 
     return GtfsIndexes(
@@ -81,9 +85,10 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
         nextUsableServiceId = nextUsableServiceId,
         stopsByModeByUic7 = stopsByModeByUic7,
         stopAndRouteByRicsByUic7 = stopAndRouteByRicsByUic7,
-        stopByTypeByUic7 = stopByTypeByUic7,
+        stopByBrandByUic7 = stopByBrandByUic7,
         stopAndTripByTrainNumberByUic7 = stopAndTripByTrainNumberByUic7,
-        brandCarrierByTrip = brandCarrierByTrip,
+        brandByTrip = brandByTrip,
+        brandsByRoute = brandsByRoute,
     )
 }
 

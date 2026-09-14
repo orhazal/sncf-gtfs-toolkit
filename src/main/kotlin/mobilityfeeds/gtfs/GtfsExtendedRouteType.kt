@@ -72,5 +72,16 @@ enum class GtfsExtendedRouteType(val value: Int) {
     SHUTTLE_TRAM_SERVICE(905),
     ALL_TRAM_SERVICES(906),
 
-    OTHER_SERVICES(1700),
+    OTHER_SERVICES(1700);
+
+    // Basic GTFS route_type this extended type refines: 0 tram, 1 subway, 2 rail, 3 bus, 11 trolleybus
+    val basicRouteType: Int
+        get() = when (value / 100) {
+            1, 3 -> 2
+            4, 5, 6 -> 1
+            2, 7 -> 3
+            8 -> 11
+            9 -> 0
+            else -> -1
+        }
 }
