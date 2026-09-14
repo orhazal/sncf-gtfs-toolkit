@@ -151,6 +151,8 @@ OCESN-87415018-87411223,OCEdefault,INCONNU,-,,2,,,
 
 The trips of those routes still carry their undertaking's RICS in the trip id. When every trip of such a route carries the same RICS and that RICS is a known agency, `routes.txt` gets it as `agency_id`. Otherwise the route keeps `OCEdefault` and a warning lists the RICS seen. In the 2026-09-14 feed, 39 routes are `OCEdefault`, their trips split 192 on `1187` and 4 on `5111`.
 
+The same routes have `-` as `route_long_name`, but their id is `OCESN-<origin UIC>-<destination UIC>`. For these `OCEdefault` routes only, the name becomes `origin - destination` from the names of those two stations in `stops.txt`, the form SNCF uses elsewhere (`Nevers - Decize`). If either station is missing the placeholder stays and a warning is logged.
+
 ## Running
 
 Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.

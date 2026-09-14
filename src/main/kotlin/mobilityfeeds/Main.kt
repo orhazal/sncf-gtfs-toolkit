@@ -45,6 +45,7 @@ fun main() {
         routes = gtfsStore.allRoutes,
         brandsByRoute = indexes.brandsByRoute,
         ricsCodesByRoute = indexes.ricsCodesByRoute,
+        stops = gtfsStore.allStops,
         agencyIds = gtfsStore.allAgencies.map { it.id }.toSet(),
         output = routesFile
     )
