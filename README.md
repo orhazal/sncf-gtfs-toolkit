@@ -161,6 +161,8 @@ The same routes have `-` as `route_long_name`, but their id is `OCESN-<origin UI
 
 MOTIS labels a trip with a display name that a [Lua user script](https://github.com/motis-project/motis/blob/master/docs/scripting.md) can set when the feed is loaded. `output/sncf_patched.lua` is that script for the patched feed, the same approach as the [Transitous script](https://github.com/public-transport/transitous/blob/main/scripts/fr-sncf.lua) for the raw feed. It reads the brand from `trip_short_name` and the train number from `trip_headsign`, and sets the display name to `<brand> <train number>`: `TGV Inoui 8541`, `Car TER 12`.
 
+<img width="532" height="781" alt="image" src="https://github.com/user-attachments/assets/e413d45e-3b6e-41a7-95d1-4541aac9fbf7" />
+
 | `trip_short_name` | Display label |
 |---|---|
 | `TGV_INOUI` | TGV Inoui |
