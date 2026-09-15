@@ -1,0 +1,79 @@
+# Every 15 minutes: HEAD the SNCF GTFS and the IDH transfer rules. When the pair of Last-Modified dates has no release yet,
+# download and patch, validate raw and patched with the MobilityData validator, and publish a GitHub release
+# tagged with both dates.
+name: Release patched GTFS
+
+on:
+  schedule:
+    - cron: "2,17,32,47 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GTFS_URL: https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip
+  IDH_URL: https://eu.ftp.opendatasoft.com/sncf/prr/temps_correspondance/INFOTRAINS_Export_IDH.zip
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check the sources' Last-Modified against the releases
+        id: sources
+        run: |
+          modified() { curl -sSI "$1" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          gtfs=$(modified "$GTFS_URL"); idh=$(modified "$IDH_URL")
+          test -n "$gtfs" -a -n "$idh"
+          tag="$(date -u -d "$gtfs" +%Y-%m-%dT%H-%M-%SZ)_$(date -u -d "$idh" +%Y-%m-%dT%H-%M-%SZ)"
+          echo "gtfs=$gtfs" >> "$GITHUB_OUTPUT"
+          echo "idh=$idh" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "GTFS of $gtfs with IDH of $idh already released as $tag"
+          else
+            echo "new=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v5
+        if: steps.sources.outputs.new == 'true'
+      - uses: actions/setup-java@v5
+        if: steps.sources.outputs.new == 'true'
+        with:
+          distribution: temurin
+          java-version: 25
+
+      - name: Download and patch
+        id: patch
+        if: steps.sources.outputs.new == 'true'
+        run: |
+          ./gradlew run -q --args="--no-txt"
+          # the app downloads both files itself: make sure neither was published again meanwhile, the next run will take it
+          modified() { curl -sSI "$1" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          test "$(modified "$GTFS_URL")" = "${{ steps.sources.outputs.gtfs }}" -a "$(modified "$IDH_URL")" = "${{ steps.sources.outputs.idh }}"
+          echo "version=$(unzip -p input/gtfs/sncf.zip feed_info.txt | tail -n +2 | cut -d, -f7)" >> "$GITHUB_OUTPUT"
+
+      - name: Validate raw and patched feeds
+        if: steps.sources.outputs.new == 'true'
+        run: |
+          gh release download -R MobilityData/gtfs-validator -p '*-cli.jar' -O validator.jar
+          validate() { java --sun-misc-unsafe-memory-access=allow -Djava.util.logging.config.file=.github/validator-logging.properties -jar validator.jar -c FR -i "$1" -o "$2"; }
+          validate input/gtfs/sncf.zip validation/raw
+          validate output/sncf_patched.zip validation/patched
+          # the validator exits 0 even with errors, so count them in the report.
+          # point_near_origin is the CITY_ stops at (0,0), which MOTIS requires
+          raw=$(jq '[.notices[] | select(.severity == "ERROR")] | length' validation/raw/report.json)
+          patched=$(jq '[.notices[] | select(.severity == "ERROR" and .code != "point_near_origin")] | length' validation/patched/report.json)
+          echo "errors: raw $raw, patched $patched"
+          test "$raw" -eq 0 -a "$patched" -eq 0
+          mv validation/raw/report.html validation/validation_raw.html
+          mv validation/patched/report.html validation/validation_patched.html
+
+      - name: Release
+        if: steps.sources.outputs.new == 'true'
+        run: |
+          gh release create "${{ steps.sources.outputs.tag }}" \
+            output/sncf_patched.zip output/sncf_patched_without_transfers.zip output/sncf_patched.lua validation/validation_raw.html validation/validation_patched.html \
+            --title "SNCF GTFS ${{ steps.patch.outputs.version }}" \
+            --notes "Patched SNCF GTFS, feed_version ${{ steps.patch.outputs.version }}. GTFS published ${{ steps.sources.outputs.gtfs }}, IDH transfer rules published ${{ steps.sources.outputs.idh }}. MobilityData validation reports attached, raw and patched."

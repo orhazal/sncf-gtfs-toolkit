@@ -7,7 +7,7 @@ Patches the SNCF open data GTFS feed with information the feed does not carry on
 3. **Display names** (`output/sncf_patched.lua`): a [MOTIS](https://github.com/motis-project/motis) user script that labels every trip `<brand> <train number>` from that `trip_short_name`.
 4. **Localities** (`stops.txt`, `stop_group_elements.txt`): one `CITY_<id>` stop per city with several stations, and the list of its stations, so that a search from "Paris" can start from any Paris station. MOTIS stop groups, not GTFS.
 
-The result is the original feed, unchanged except for those five files plus the added `stop_group_elements.txt`, written to `output/sncf_patched.zip`.
+The result is the original feed, unchanged except for those five files plus the added `stop_group_elements.txt`, written to `output/sncf_patched.zip`. `output/sncf_patched_without_transfers.zip` is the same feed without use case 1: the original `transfers.txt` and `calendar_dates.txt`.
 
 ## Inputs
 
@@ -212,9 +212,24 @@ Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
 ./gradlew run
 ```
 
-Downloads go to `input/`, results to `output/`: `sncf_patched.zip`, with the five patched files and `stop_group_elements.txt` in `output/txt/`. `sncf_patched.lua` next to them is not generated, it is the MOTIS script of use case 3.
+Downloads go to `input/`, results to `output/`: the two zips, with the five patched files and `stop_group_elements.txt` in `output/txt/`, unless run with `--args="--no-txt"`, which deletes them once the zips are written. `sncf_patched.lua` next to them is not generated, it is the MOTIS script of use case 3.
+
+## Releases
+
+A GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) publishes the patched feed as a [release](https://github.com/orhazal/sncf-gtfs-toolkit/releases) whenever SNCF publishes new data. The latest one is always at:
+
+```
+https://github.com/orhazal/sncf-gtfs-toolkit/releases/latest/download/sncf_patched.zip
+```
+
+1. Every 15 minutes, a `HEAD` request on the GTFS export and on the IDH transfer rules reads their `Last-Modified` dates. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else runs. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
+2. Otherwise the app runs with `--no-txt`, then both dates are read again: if either file changed during the run, the run stops and the next one takes the newer files.
+3. Both the raw feed and `sncf_patched.zip` go through the [MobilityData GTFS validator](https://github.com/MobilityData/gtfs-validator). Any error in the raw feed, or any error other than `point_near_origin` in the patched one (the `CITY_` stops at 0,0 of use case 4), stops the run without a release.
+4. The release carries `sncf_patched.zip`, `sncf_patched_without_transfers.zip`, `sncf_patched.lua` and the two validation reports.
+
+A run that fails, because SNCF changed the feed's shape or the validator found errors, publishes nothing and leaves the previous release as the latest. GitHub disables the schedule of a public repository after 60 days without a commit.
 
 ## License
 
 - **Code**: [MIT](LICENSE).
-- **Data** (`unusual_uic_referential.csv`, `stations_to_localities.csv` derived from the [Trainline stations database](https://github.com/trainline-eu/stations), and the patched feed this tool produces): [Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), see [LICENSE-ODbL](LICENSE-ODbL).
+- **Data** `unusual_uic_referential.csv`, `stations_to_localities.csv` derived from the [Trainline stations database](https://github.com/trainline-eu/stations), and the patched feed this tool produces: [Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), see [LICENSE-ODbL](LICENSE-ODbL).

@@ -6,6 +6,8 @@
         </encoder>
     </appender>
 
+    <logger name="org.onebusaway" level="warn"/> <!-- "reading entities: ..." for every GTFS file -->
+
     <root level="info">
         <appender-ref ref="STDOUT"/>
     </root>

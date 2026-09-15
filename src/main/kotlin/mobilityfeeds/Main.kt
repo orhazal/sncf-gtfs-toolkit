@@ -28,8 +28,9 @@ private val tripsFile = File(txtPath, "trips.txt")
 private val stopsFile = File(txtPath, "stops.txt")
 private val stopGroupElementsFile = File(txtPath, "stop_group_elements.txt")
 private val patchedGtfsFile = File(outputPath, "sncf_patched.zip")
+private val patchedGtfsWithoutTransfersFile = File(outputPath, "sncf_patched_without_transfers.zip")
 
-fun main() {
+fun main(args: Array<String>) {
     val gtfsZip = download(
         type = "gtfs",
         name = "sncf",
@@ -81,19 +82,18 @@ fun main() {
         groupsOutput = stopGroupElementsFile,
     )
 
-    writeGtfsWithReplacements(
-        sourceGtfs = gtfsZip,
-        replacements = mapOf(
-            "routes.txt" to routesFile,
-            "transfers.txt" to transfersFile,
-            "calendar_dates.txt" to calendarDatesFile,
-            "trips.txt" to tripsFile,
-            "stops.txt" to stopsFile,
-            "stop_group_elements.txt" to stopGroupElementsFile,
-        ),
-        output = patchedGtfsFile,
+    val replacements = mapOf(
+        "routes.txt" to routesFile,
+        "transfers.txt" to transfersFile,
+        "calendar_dates.txt" to calendarDatesFile,
+        "trips.txt" to tripsFile,
+        "stops.txt" to stopsFile,
+        "stop_group_elements.txt" to stopGroupElementsFile,
     )
-    logger.info("Wrote patched GTFS feed ${patchedGtfsFile.path}")
+    writeGtfsWithReplacements(sourceGtfs = gtfsZip, replacements = replacements, output = patchedGtfsFile)
+    writeGtfsWithReplacements(sourceGtfs = gtfsZip, replacements = replacements - "transfers.txt" - "calendar_dates.txt", output = patchedGtfsWithoutTransfersFile) // the added service ids only serve the transfers
+    logger.info("Wrote patched GTFS feeds ${patchedGtfsFile.path} and ${patchedGtfsWithoutTransfersFile.path}")
+    if ("--no-txt" in args) txtPath.deleteRecursively() // the zips are the deliverable, the workflow does not want the txt files around
 }
 
 fun download(type: String, name: String, url: String): File {
