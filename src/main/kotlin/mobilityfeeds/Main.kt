@@ -5,6 +5,7 @@ import mobilityfeeds.gtfs.getGtfsStore
 import mobilityfeeds.gtfs.writeGtfsWithReplacements
 import mobilityfeeds.patch.patchCalendarDates
 import mobilityfeeds.patch.patchRoutes
+import mobilityfeeds.patch.patchStops
 import mobilityfeeds.patch.patchTransfers
 import mobilityfeeds.patch.patchTrips
 import mobilityfeeds.sncf.buildIndexes
@@ -19,10 +20,13 @@ private val logger = LoggerFactory.getLogger("main")
 private val httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
 
 private val outputPath = File("output")
-private val transfersFile = File(outputPath, "transfers.txt")
-private val calendarDatesFile = File(outputPath, "calendar_dates.txt")
-private val routesFile = File(outputPath, "routes.txt")
-private val tripsFile = File(outputPath, "trips.txt")
+private val txtPath = File(outputPath, "txt")
+private val transfersFile = File(txtPath, "transfers.txt")
+private val calendarDatesFile = File(txtPath, "calendar_dates.txt")
+private val routesFile = File(txtPath, "routes.txt")
+private val tripsFile = File(txtPath, "trips.txt")
+private val stopsFile = File(txtPath, "stops.txt")
+private val stopGroupElementsFile = File(txtPath, "stop_group_elements.txt")
 private val patchedGtfsFile = File(outputPath, "sncf_patched.zip")
 
 fun main() {
@@ -40,7 +44,7 @@ fun main() {
     val gtfsStore = getGtfsStore(gtfsZip)
     val indexes = buildIndexes(gtfsStore, getUicReferential())
 
-    outputPath.mkdirs()
+    txtPath.mkdirs()
     val routeTypeByRoute = patchRoutes(
         routes = gtfsStore.allRoutes,
         brandsByRoute = indexes.brandsByRoute,
@@ -70,6 +74,13 @@ fun main() {
         output = tripsFile
     )
 
+    patchStops(
+        gtfsZip = gtfsZip,
+        stops = gtfsStore.allStops,
+        stopsOutput = stopsFile,
+        groupsOutput = stopGroupElementsFile,
+    )
+
     writeGtfsWithReplacements(
         sourceGtfs = gtfsZip,
         replacements = mapOf(
@@ -77,6 +88,8 @@ fun main() {
             "transfers.txt" to transfersFile,
             "calendar_dates.txt" to calendarDatesFile,
             "trips.txt" to tripsFile,
+            "stops.txt" to stopsFile,
+            "stop_group_elements.txt" to stopGroupElementsFile,
         ),
         output = patchedGtfsFile,
     )
@@ -84,7 +97,7 @@ fun main() {
 }
 
 fun download(type: String, name: String, url: String): File {
-    val local = File("feeds/$type", "$name.zip").apply { parentFile.mkdirs() }
+    val local = File("input/$type", "$name.zip").apply { parentFile.mkdirs() }
     logger.info("Downloading $url -> ${local.path}")
     val response = httpClient.send(
         HttpRequest.newBuilder(URI.create(url)).build(),

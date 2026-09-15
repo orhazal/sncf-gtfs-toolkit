@@ -1,0 +1,386 @@
+station_id,station_name,locality_id,locality_name
+80144139,Müllheim (Baden),7113,Müllheim (Baden)
+80144154,Neuenburg (Baden),7113,Müllheim (Baden)
+82001000,Luxembourg,8731,Luxembourg
+82916015,Luxembourg – Gare,8731,Luxembourg
+83000356,Torino Porta Susa,8565,Torino
+83002196,Torino Porta Nuova,8565,Torino
+83004523,Torino Lingotto,8565,Torino
+85000109,Basel SBB,5877,Basel
+85010082,Genève,5335,Genève
+85010264,Genève Aéroport,5335,Genève
+87024380,Le Puy-en-Velay Lafayette,5009,Le Puy-en-Velay
+87107409,Vignory Centre,5672,Vignory
+87107417,Chaumont Hôpital,4767,Chaumont
+87107425,Bologne Salle des Fêtes,4640,Bologne
+87107474,St-Dizier Hôpital,5167,St-Dizier
+87108829,Sedan Place Calonne,5165,Sedan
+87109306,Lille CHR,4652,Lille
+87112326,Carignan Rue de la Paix,5076,Carignan
+87112334,We,5076,Carignan
+87112714,Margut Village,4789,Margut
+87113001,Paris Gare de l’Est,4916,Paris
+87117606,Lexy,8749,Lexy
+87118000,Troyes,5342,Troyes
+87139501,Troyes St-Martin Delaunay,5342,Troyes
+87139659,Troyes Delestraint Belgique,5342,Troyes
+87139667,Troyes Lombards,5342,Troyes
+87142000,Chaumont,4767,Chaumont
+87142224,Bologne,4640,Bologne
+87142232,Vignory,5672,Vignory
+87144212,Mirecourt,5691,Mirecourt
+87171009,Reims Ville,89,Reims
+87171272,Reims Maison Blanche,89,Reims
+87171926,Champagne-Ardenne TGV,89,Reims
+87172254,Sedan,5165,Sedan
+87172353,Carignan,5076,Carignan
+87172411,Margut Fromy,4789,Margut
+87173468,Loures-Barousse,10564,Loures
+87175000,St-Dizier,5167,St-Dizier
+87175240,Lérouville,9490,Lérouville
+87181016,St-Louis La-Chaussée,159,St-Louis (Haut Rhin)
+87181222,Colmar St-Joseph,1349,Colmar
+87182014,Colmar,1349,Colmar
+87182055,Mulhouse – Dornach,4753,Mulhouse
+87182063,Mulhouse,4753,Mulhouse
+87182139,St-Louis,159,St-Louis (Haut Rhin)
+87182204,Illfurth,729,Illfurth
+87182337,Rouffach,736,Rouffach
+87182352,Turckheim,738,Turckheim
+87182394,Munster,4816,Munster
+87182550,Vieux-Thann,162,Thann
+87182568,Thann,162,Thann
+87182592,Moosch,758,Moosch
+87182600,St-Amarin,759,St-Amarin
+87182626,Fellering,761,Fellering
+87182634,Oderen,762,Oderen
+87182667,Lutterbach,4711,Lutterbach
+87182881,Thann – St-Jacques,162,Thann
+87184002,Belfort-Ville,10610,Belfort – Montbéliard
+87184408,Belfort-Montbéliard TGV (Meroux),10610,Belfort – Montbéliard
+87184523,Montbéliard,10610,Belfort – Montbéliard
+87187930,Basel St. Johann,5877,Basel
+87191346,Kédange,9047,Kédange
+87192039,Metz,4827,Metz
+87192070,Metz Nord,4827,Metz
+87192286,Morhange,9222,Morhange
+87193177,Bouzonville,9042,Bouzonville
+87193516,Farébersviller,9130,Farébersviller
+87193524,Farschviller,9131,Farschviller
+87193615,Sarreguemines,118,Sarreguemines
+87193789,Rohrbach-lès-Bitche,9060,Rohrbach-lès-Bitche
+87193821,Bitche,5273,Bitche
+87193839,Bitche Camp,5273,Bitche
+87194001,Longwy,5702,Longwy
+87194274,Longuyon,5693,Longuyon
+87194456,Cons-la-Grandville,5699,Cons-la-Grandville
+87208553,Casino – Lacroix-Laval,4862,Charbonnières-les-Bains
+87212027,Strasbourg,5260,Strasbourg
+87212134,Brumath,933,Brumath
+87212175,Wilwisheim,936,Wilwisheim
+87212191,Strasbourg Roethig,5260,Strasbourg
+87212225,Saverne,5216,Saverne
+87212332,Gambsheim,948,Gambsheim
+87213108,Schweighouse-sur-Moder,5258,Schweighouse-sur-Moder
+87213207,Mertzwiller,154,Mertzwiller
+87213231,Reichshoffen Usines,10638,Reichshoffen
+87213249,Reichshoffen Ville,10638,Reichshoffen
+87213611,Bischwiller,992,Bischwiller
+87213660,Kurtzenhouse,993,Kurtzenhouse
+87213686,Hoerdt,995,Hoerdt
+87213769,Wimmenau,997,Wimmenau
+87213827,Ettendorf,1001,Ettendorf
+87214288,Obernai,1018,Obernai
+87214585,Mutzig,1040,Mutzig
+87214593,Gresswiller,1041,Gresswiller
+87214676,Wisches,1046,Wisches
+87215012,Sarrebourg,5706,Sarrebourg
+87215327,Mittersheim,9607,Mittersheim
+87215350,Sarraltroff,9715,Sarraltroff
+87223263,Lille-Europe,4652,Lille
+87271007,Paris Gare du Nord,4916,Paris
+87278259,Mérignac-Arlac,827,Bordeaux
+87281055,Croix-l’Allumette,129,Croix
+87281071,Calais Fréthun,1417,Calais
+87282624,Lyon Jean Macé,4718,Lyon
+87286005,Lille-Flandres,4652,Lille
+87286716,Croix – Wasquehal,129,Croix
+87287250,Lille Porte de Douai,4652,Lille
+87295063,Hirson,4013,Hirson
+87300822,Belfort – Montbéliard TGV,10610,Belfort – Montbéliard
+87300863,Besançon-Franche-Comté TGV,5029,Besançon
+87317016,Boulogne-sur-Mer Tintelleries,5758,Boulogne-sur-Mer
+87317263,Calais Ville,1417,Calais
+87317586,Boulogne-sur-Mer Ville,5758,Boulogne-sur-Mer
+87318964,Avignon TGV,489,Avignon
+87319012,Aix-en-Provence TGV,23614,Aix-en-Provence
+87323675,Montluçon Rimard,4671,Montluçon
+87324095,Futuroscope,5001,Poitiers
+87324335,Hirson Écoles,4013,Hirson
+87333005,Pouzauges Centre,5018,Pouzauges
+87335521,Grenoble Gare Routière,3366,Grenoble
+87338145,St-Dizier St-Amand,5167,St-Dizier
+87354589,St-Sébastien-sur-Loire Pas Enchantés,9144,St-Sébastien-sur-Loire
+87354597,St-Sébastien-sur-Loire Frêne Rond,9144,St-Sébastien-sur-Loire
+87384008,Paris St-Lazare,4916,Paris
+87386540,Munster Badischhof,4816,Munster
+87389924,St-Hilaire-de-Riez Centre,198,St-Hilaire-de-Riez
+87391003,Paris Montparnasse,4916,Paris
+87391102,Paris Montparnasse 3 Vaugirard,4916,Paris
+87393579,Massy – Palaiseau,2000,Massy
+87393702,Massy TGV,2000,Massy
+87395665,Issoire Lycée Deville,10683,Issoire
+87395673,Issoire Lycée Murat,10683,Issoire
+87395830,Le Breuil-sur-Couze Lycée,10719,Le Breuil-sur-Couze
+87395962,Ste-Florine Lycée Claude Favard,17212,Ste-Florine
+87396002,Le Mans,4661,Le Mans
+87396895,Clermont-Ferrand la Rotonde,1557,Clermont-Ferrand
+87402297,Colmar Mésanges,1349,Colmar
+87405993,Mirecourt Lycée Agricole,5691,Mirecourt
+87406611,Longuyon Pont Entre Deux Eaux,5693,Longuyon
+87406660,Cons-la-Grandville Lotissement,5699,Cons-la-Grandville
+87406678,Cons-la-Grandville Monument,5699,Cons-la-Grandville
+87406686,Lexy Providence Usine,8749,Lexy
+87406694,Lexy Rue du Square,8749,Lexy
+87406702,Longuyon la Machine,5693,Longuyon
+87406710,Longwy Gare Routière,5702,Longwy
+87406728,Bouzonville Rue Alzing,9042,Bouzonville
+87406777,Hombourg-Budange Chapelle,3641,Hombourg-Budange
+87406793,Hombourg-Budange Tilleuls,3641,Hombourg-Budange
+87406801,Kédange Église,9047,Kédange
+87406819,Kuntzig Bibiche,9049,Kuntzig
+87406827,Kuntzig Place de la Liberté,9049,Kuntzig
+87406835,Metzervisse Centre,10629,Metzervisse
+87406843,Metzervisse Église,10629,Metzervisse
+87406868,Farébersviller Cité,9130,Farébersviller
+87406884,Faréberswiller Moulin,9130,Farébersviller
+87406892,Farschviller Centre,9131,Farschviller
+87406900,Sarreguemines Poste,118,Sarreguemines
+87406918,Mertzwiller Monument aux Morts,154,Mertzwiller
+87406926,Philippsbourg – Liesbach,9041,Philippsbourg
+87406934,Bitche Rue de la Paix,5273,Bitche
+87406967,Rohrbach-lès-Bitche,9060,Rohrbach-lès-Bitche
+87406975,Fénétrange Gendarmerie,9477,Fénétrange
+87406983,Fénétrange Pensionnat,9477,Fénétrange
+87407015,Sarraltroff Mairie,9715,Sarraltroff
+87407031,Sarrebourg Usine Mephisto,5706,Sarrebourg
+87407049,Avricourt Café Saint-Nicolas,17380,Avricourt
+87407056,Avricourt Rue de Lorraine,17380,Avricourt
+87407106,Sarrebourg Verreries,5706,Sarrebourg
+87407122,Fénétrange Carrefour Étang,9477,Fénétrange
+87407148,Mittersheim l’Escale,9607,Mittersheim
+87407155,Morhange Place de la République,9222,Morhange
+87407171,Morhange Jeanne d’Arc,9222,Morhange
+87407189,Sarrebourg Place Mathey,5706,Sarrebourg
+87407320,Schweighouse-sur-Moder Au Faubourg,5258,Schweighouse-sur-Moder
+87407940,Le Breuil-sur-Couze Salle des Fêtes,10719,Le Breuil-sur-Couze
+87409474,Paulhaguet Monument,10583,Paulhaguet
+87409524,Ste-Florine Place François Mitterrand,17212,Ste-Florine
+87417444,Reims Franchet d’Esperey,89,Reims
+87417907,Ussel Ville,10657,Ussel
+87427393,Monnaie Jean-Baptiste Moreau,4762,Monnaie
+87437798,La Rochelle Porte Dauphine,5085,La Rochelle
+87446179,St-Cyprien Arènes,5306,Toulouse
+87450064,Meymac Bourg,4720,Meymac
+87463083,Nantes Pirmil,5317,Nantes
+87463125,Ste-Pazanne Rue du Vigneau,5230,Ste-Pazanne
+87472605,Thann Centre,162,Thann
+87472639,Mulhouse Zu-Rhein,4753,Mulhouse
+87473835,Pontrieux Halte,40,Pontrieux
+87473843,Pontrieux,40,Pontrieux
+87476267,Les Sables-Blancs,107,Carnac
+87476275,L’Isthme,111,St-Pierre-Quiberon
+87476416,Plouharnel – Carnac,107,Carnac
+87476440,St-Pierre-Quiberon,111,St-Pierre-Quiberon
+87476879,Fénétrange Mairie,9477,Fénétrange
+87477588,Longwy Route de Metz,5702,Longwy
+87477620,Sarrebourg Abri Route de Phalsbourg,5706,Sarrebourg
+87477638,Sarrebourg LP Messmer,5706,Sarrebourg
+87477646,Sarrebourg Mairie,5706,Sarrebourg
+87481002,Nantes,5317,Nantes
+87481192,Ancenis,2186,Ancenis
+87481226,Ste-Pazanne,5230,Ste-Pazanne
+87481697,La Baule-les-Pins,4613,La Baule
+87481754,La Baule-Escoublac,4613,La Baule
+87484006,Angers St-Laud,344,Angers
+87484048,Angers Maître École,344,Angers
+87485003,La Rochelle Ville,5085,La Rochelle
+87486563,St-Hilaire-de-Riez,198,St-Hilaire-de-Riez
+87487314,Pouzauges,5018,Pouzauges
+87497461,Toulouse Gallieni Canceropôle,5306,Toulouse
+87533620,Mulhouse Gare Routière,4753,Mulhouse
+87534065,Lérouville Centre,9490,Lérouville
+87534339,Mulhouse Musées,4753,Mulhouse
+87534347,Lutterbach Tram-Train,4711,Lutterbach
+87543009,Orléans Centre,4894,Orléans
+87543017,Les Aubrais,4894,Orléans
+87547000,Paris Austerlitz,4916,Paris
+87556506,Valence Gare Routière,5611,Valence
+87556522,Montélimar Gare Routière,4806,Montélimar
+87559070,Nevers le Banlay,4857,Nevers
+87571216,Vendôme – Villiers-sur-Loir,5846,Vendôme
+87574558,Vendôme,5846,Vendôme
+87574681,Monnaie,4762,Monnaie
+87575001,Poitiers,5001,Poitiers
+87576009,Vierzon,5673,Vierzon
+87576090,Vierzon Forges,5673,Vierzon
+87581009,Bordeaux St-Jean,827,Bordeaux
+87590299,Nice Pont Michel,4836,Nice
+87592006,Limoges Bénédictins,4651,Limoges
+87592022,Limoges Montjovis,4651,Limoges
+87594093,Ussel,10657,Ussel
+87594275,Meymac,4720,Meymac
+87598755,Limoux Flassian,4665,Limoux
+87611004,Toulouse Matabiau,5306,Toulouse
+87611178,Loures – Barbazan,10564,Loures
+87611467,Colomiers,57,Colomiers
+87611921,Colomiers Lycée International,57,Colomiers
+87612002,Labège Innopole,60,Labège
+87612028,Labège Village,60,Labège
+87615005,Albi Ville,4604,Albi
+87615161,Limoux,4665,Limoux
+87615195,Albi Madeleine,4604,Albi
+87635581,La Barasse,4790,Marseille
+87639930,Alteckendorf Eckendorf,1002,Alteckendorf
+87639948,Alteckendorf Mairie,1002,Alteckendorf
+87639955,Alteckendorf – Altdorf,1002,Alteckendorf
+87639971,Ettendorf,1001,Ettendorf
+87640854,Ste-croix-aux-mines – Stimbach,1060,Ste-Croix-aux-Mines
+87641001,Montluçon,4671,Montluçon
+87642223,Saverne,5216,Saverne
+87642249,Saverne,5216,Saverne
+87642256,Saverne,5216,Saverne
+87642264,Dossenheim-sur-Zinsel – Mairie,965,Dossenheim-sur-Zinsel
+87642272,Dossenheim-sur-Zinsel – Lotissement,965,Dossenheim-sur-Zinsel
+87642280,Neuwiller-lès-Saverne – Pharmacie,966,Neuwiller-lès-Saverne
+87642298,Neuwiller-lès-Saverne – Rue de Bouxwiller,966,Neuwiller-lès-Saverne
+87642348,Wimmenau,997,Wimmenau
+87642801,Bitche Quartier Driant,5273,Bitche
+87651802,Sisteron,4100,Sisteron
+87654384,Lichtenberg – Église,4703,Lichtenberg
+87654392,Lichtenberg – Picardie,4703,Lichtenberg
+87654467,Wimmenau,997,Wimmenau
+87654475,Rouffach,736,Rouffach
+87654558,Illfurth,729,Illfurth
+87654673,Brumath,933,Brumath
+87658740,Wilwisheim,936,Wilwisheim
+87659730,Gambsheim,948,Gambsheim
+87659755,Hoerdt,995,Hoerdt
+87659763,Hoerdt,995,Hoerdt
+87659789,Kurtzenhouse,993,Kurtzenhouse
+87659797,Kurtzenhouse,993,Kurtzenhouse
+87659813,Bischwiller,992,Bischwiller
+87659888,Oderen,762,Oderen
+87659896,Fellering,761,Fellering
+87659912,Saint-Amarin – Hôtel Le Cheval Blanc,759,St-Amarin
+87659938,Moosch,758,Moosch
+87660571,Mutzig,1040,Mutzig
+87660589,Gresswiller,1041,Gresswiller
+87660688,Wisches,1046,Wisches
+87660910,Obernai Passage à niveau,1018,Obernai
+87665380,Turckheim – Place De La Republique,738,Turckheim
+87668137,Philippsbourg – Falkenstein,9041,Philippsbourg
+87672006,Pau,5006,Pau
+87672600,La Croix-du-Prince,5006,Pau
+87677005,Hendaye,5785,Hendaye
+87677104,Hendaye-Plage – Les Deux Jumeaux,5785,Hendaye
+87678482,Ste-croix-aux-mines – Centre,1060,Ste-Croix-aux-Mines
+87678698,Schweighouse Église Protestante,5258,Schweighouse-sur-Moder
+87683318,St-Florentin – Vergigny,5193,St-Florentin
+87683334,St-Florentin-Ville,5193,St-Florentin
+87686006,Paris Gare de Lyon,4916,Paris
+87686667,Paris Bercy Bourgogne-Pays d’Auvergne,4916,Paris
+87688887,Montpellier Sud de France,22598,Montpellier
+87691600,Nevers les Perrières,4857,Nevers
+87695999,Bourg-en-Bresse Archives,5755,Bourg-en-Bresse
+87696005,Nevers,4857,Nevers
+87696013,Bourg-en-Bresse Gare Routière,5755,Bourg-en-Bresse
+87697003,Albigny Neuville Arrêt TCL,9034,Albigny – Neuville
+87697128,Lyon Part-Dieu Gare Routière,4718,Lyon
+87697193,Clelles – Mairie,4082,Clelles – Mens
+87697490,Grenoble – Europole,3366,Grenoble
+87697516,Lus-la-Croix-Haute – RD 1075,4085,Lus-la-Croix-Haute
+87697524,Monestier-de-Clermont – Centre,4080,Monestier-de-Clermont
+87698308,Grésy-sur-Aix – Le Chevret Ondéa,4018,Grésy-sur-Aix
+87698506,Feyzin Arrêt TCL,3698,Feyzin
+87698647,Romans Gare Routière,4281,Romans – Bourg-de-Péage
+87698662,St-Étienne Châteaucreux Gare Routière,2118,St-Étienne
+87698803,Vienne Gare Routière,5848,Vienne
+87703975,Nîmes Pont du Gard,22600,Nîmes
+87713008,Dijon Porte Neuve,1782,Dijon
+87713040,Dijon Ville,1782,Dijon
+87718007,Besançon Viotte,5029,Besançon
+87718015,Besançon Mouillère,5029,Besançon
+87721001,Lyon Vaise,4718,Lyon
+87721159,Lyon St-Paul,4718,Lyon
+87721175,Lyon Gorge de Loup,4718,Lyon
+87721266,Albigny – Neuville,9034,Albigny – Neuville
+87721449,Dardilly le Jubin,26825,Dardilly
+87721480,Dardilly les Mouilles,26825,Dardilly
+87721530,Charbonnières-les-Bains,4862,Charbonnières-les-Bains
+87722025,Lyon Perrache,4718,Lyon
+87722405,Givors Ville,3263,Givors
+87722439,Givors Canal,3263,Givors
+87722538,Feyzin,3698,Feyzin
+87722587,Vienne,5848,Vienne
+87723197,Lyon Part-Dieu,4718,Lyon
+87725689,Mâcon Ville,5041,Mâcon
+87725705,Mâcon – Loché TGV,5041,Mâcon
+87726000,St-Étienne Châteaucreux,2118,St-Étienne
+87726158,St-Étienne la Terrasse,2118,St-Étienne
+87726174,St-Étienne le Clapier,2118,St-Étienne
+87726190,St-Étienne Bellevue,2118,St-Étienne
+87726901,St-Étienne Carnot,2118,St-Étienne
+87727735,Troyes – Theatre-de-Champagne,5342,Troyes
+87731802,St-Georges-d’Aurac Bourg,5179,St-Georges-d’Aurac
+87734004,Clermont-Ferrand,1557,Clermont-Ferrand
+87734202,Issoire,10683,Issoire
+87734228,Le Breuil-sur-Couze,10719,Le Breuil-sur-Couze
+87734293,Paulhaguet,10583,Paulhaguet
+87734301,St-Georges-d’Aurac,5179,St-Georges-d’Aurac
+87734699,Le Puy-en-Velay,5009,Le Puy-en-Velay
+87737411,Les Aubrais – Gare Routière,4894,Orléans
+87737429,Paris Austerlitz – Gare Routière,4916,Paris
+87742056,Grenoble – Cité Internationale,3366,Grenoble
+87742262,Toulon Sainte-Musse,5304,Toulon
+87743005,Bourg-en-Bresse,5755,Bourg-en-Bresse
+87743872,Le Mans – Hôpital-Université,4661,Le Mans
+87744078,Saint-Gervais-les-Bains,26833,Saint-Gervais-les-Bains
+87744177,Ancenis Bis,2186,Ancenis
+87744243,Orléans – Avenue de Paris,4894,Orléans
+87746107,Grésy-sur-Aix,4018,Grésy-sur-Aix
+87746479,St-Gervais-les-Bains – Le Fayet,26833,Saint-Gervais-les-Bains
+87747006,Grenoble,3366,Grenoble
+87747329,Moirans,4774,Moirans
+87747402,Grenoble Universités Gières,3366,Grenoble
+87747592,Monestier-de-Clermont,4080,Monestier-de-Clermont
+87747626,Clelles – Mens,4082,Clelles – Mens
+87747667,Lus-la-Croix-Haute,4085,Lus-la-Croix-Haute
+87747691,Moirans – La-Galifette,4774,Moirans
+87751008,Marseille St-Charles,4790,Marseille
+87751081,Marseille Blancarde,4790,Marseille
+87751206,Sisteron,4100,Sisteron
+87751404,Aix-en-Provence Centre,23614,Aix-en-Provence
+87751826,Marseille St-Antoine,4790,Marseille
+87754192,Dossenheim-sur-Zinsel – Pressoir,965,Dossenheim-sur-Zinsel
+87755009,Toulon,5304,Toulon
+87756056,Nice Ville,4836,Nice
+87756254,Nice St-Augustin,4836,Nice
+87756353,Nice Riquier,4836,Nice
+87756486,Menton,10,Menton
+87756494,Menton – Garavan,10,Menton
+87757617,Cannes – La Bocca,1179,Cannes
+87757625,Cannes,1179,Cannes
+87759290,Picon-Busserine,4790,Marseille
+87759316,St-Joseph-le-Castellas,4790,Marseille
+87761007,Valence Ville,5611,Valence
+87761494,St-Péray,5611,Valence
+87761650,Romans – Bourg-de-Péage,4281,Romans – Bourg-de-Péage
+87763029,Valence TGV,5611,Valence
+87764001,Montélimar,4806,Montélimar
+87765008,Avignon Centre,489,Avignon
+87773002,Montpellier St-Roch,22598,Montpellier
+87773408,Lunel,66,Lunel
+87773424,Lunel-Viel,66,Lunel
+87775007,Nîmes Centre,22600,Nîmes
+87782607,Clermont-Ferrand la Pardieu,1557,Clermont-Ferrand

@@ -4,7 +4,8 @@ import org.onebusaway.gtfs.impl.GtfsDaoImpl
 import org.onebusaway.gtfs.model.calendar.ServiceDate
 import java.time.LocalDate
 import java.util.EnumMap
-import java.util.Properties
+import org.apache.commons.csv.CSVFormat
+import java.io.File
 
 private val TRIP_ID_REGEX = Regex("""(\d{4})_([FR]):""") // RICS, mode
 private val STOP_POINT_REGEX = Regex("""^StopPoint:OCE(.+)-\d{8}$""")
@@ -100,10 +101,7 @@ private fun ServiceDate.toLocalDate(): LocalDate = LocalDate.of(year, month, day
 fun serviceIdAfter(serviceId: String, offset: Int = 1): String =
     (serviceId.toInt() + offset).toString().padStart(serviceId.length, '0')
 
-fun getUicReferential(): Map<String, String> {
-    val properties = Properties()
-    val resource = GtfsIndexes::class.java.getResourceAsStream("/unusual_uic_referential.properties")
-        ?: error("unusual_uic_referential.properties missing from resources")
-    resource.reader().use { properties.load(it) }
-    return properties.map { (uic8, uic7) -> uic8.toString() to uic7.toString() }.toMap()
+// GTFS stop uic8 -> IDH uic7, for the stations where dropping the last digit gives the wrong code
+fun getUicReferential(): Map<String, String> = File("input/other/unusual_uic_referential.csv").bufferedReader().use { reader ->
+    CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader).associate { it["uic8"] to it["uic7"] }
 }

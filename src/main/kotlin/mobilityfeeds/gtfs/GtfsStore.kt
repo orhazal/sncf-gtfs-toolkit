@@ -15,18 +15,22 @@ fun getGtfsStore(gtfsZip: File): GtfsDaoImpl {
     return (reader.entityStore as? GtfsDaoImpl) ?: error("GtfsDaoImpl not initialized")
 }
 
-// Copies every entry from the source GTFS zip, replacing the ones whose name matches a provided file
+// Copies every entry from the source GTFS zip, replacing the ones whose name matches a provided file and adding the others
 fun writeGtfsWithReplacements(
     sourceGtfs: File,
     replacements: Map<String, File>, // entry name -> new content
     output: File,
 ) {
     ZipOutputStream(output.outputStream().buffered()).use { zos ->
+        val copied = mutableSetOf<String>()
+        var lastTime = 0L
         ZipInputStream(sourceGtfs.inputStream().buffered()).use { zis ->
             var entry = zis.nextEntry
             while (entry != null) {
+                copied += entry.name
+                lastTime = entry.time
                 val replacement = replacements[entry.name]
-                zos.putNextEntry(ZipEntry(entry.name).apply { time = entry.time }) // source timestamps: same input, same bytes
+                zos.putNextEntry(ZipEntry(entry.name).apply { time = lastTime }) // source timestamps: same input, same bytes
                 if (replacement != null) {
                     replacement.inputStream().use { it.copyTo(zos) }
                 } else {
@@ -35,6 +39,11 @@ fun writeGtfsWithReplacements(
                 zos.closeEntry()
                 entry = zis.nextEntry
             }
+        }
+        (replacements - copied).forEach { (name, file) -> // files the source does not have
+            zos.putNextEntry(ZipEntry(name).apply { time = lastTime })
+            file.inputStream().use { it.copyTo(zos) }
+            zos.closeEntry()
         }
     }
 }

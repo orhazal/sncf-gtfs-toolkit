@@ -5,8 +5,9 @@ Patches the SNCF open data GTFS feed with information the feed does not carry on
 1. **Transfers** (`transfers.txt`), computed from the SNCF transfer-time rules (IDH export), with `calendar_dates.txt` extended so that date-limited rules only apply on their dates.
 2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), the brand of every trip in `trip_short_name`, and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids, with a name built from the route id.
 3. **Display names** (`output/sncf_patched.lua`): a [MOTIS](https://github.com/motis-project/motis) user script that labels every trip `<brand> <train number>` from that `trip_short_name`.
+4. **Localities** (`stops.txt`, `stop_group_elements.txt`): one `CITY_<id>` stop per city with several stations, and the list of its stations, so that a search from "Paris" can start from any Paris station. MOTIS stop groups, not GTFS.
 
-The result is the original feed, unchanged except for those four files, written to `output/sncf_patched.zip`.
+The result is the original feed, unchanged except for those five files plus the added `stop_group_elements.txt`, written to `output/sncf_patched.zip`.
 
 ## Inputs
 
@@ -14,15 +15,16 @@ The result is the original feed, unchanged except for those four files, written 
 |---|---|---|
 | SNCF GTFS feed | `Export_OpenData_SNCF_GTFS_NewTripId.zip` (opendatasoft) | Everything |
 | SNCF transfer-time rules | `INFOTRAINS_Export_IDH.zip` (opendatasoft), files `Export_CONNECTION_TIMES.csv` and `Export_TRAIN_CONNECTION_TIMES.csv` | Transfers |
-| `unusual_uic_referential.properties` | `src/main/resources`, bundled in the jar | Matching stations between the two datasets |
+| `unusual_uic_referential.csv` | `input/other` | Matching stations between the two datasets |
+| `stations_to_localities.csv` | `input/other`, derived from the [Trainline stations database](https://github.com/trainline-eu/stations) | Localities |
 
-Both archives are downloaded on every run into `feeds/`.
+Both archives are downloaded on every run into `input/`.
 
 ## How the two datasets are matched
 
 The rules and the feed do not describe things the same way, so a few conventions bridge them. Everything below is read from the feed itself.
 
-**Station.** Rules identify a station by its 7-digit UIC code. A GTFS stop point id ends with the 8-digit UIC code (`StopPoint:OCETGV INOUI-87391003`). Dropping the last digit gives the 7-digit code for every French station and almost every foreign one. The few foreign stations (Germany, Italy, Switzerland) where the rules use an unrelated code are listed in `unusual_uic_referential.properties` as an explicit 8-digit to 7-digit mapping.
+**Station.** Rules identify a station by its 7-digit UIC code. A GTFS stop point id ends with the 8-digit UIC code (`StopPoint:OCETGV INOUI-87391003`). Dropping the last digit gives the 7-digit code for every French station and almost every foreign one. The few foreign stations (Germany, Italy, Switzerland) where the rules use an unrelated code are listed in `unusual_uic_referential.csv` as an explicit 8-digit to 7-digit mapping.
 
 **Stop point.** A station has one stop point per brand or carrier serving it. The brand is the text between `OCE` and the UIC code in the stop point id: `TGV INOUI`, `OUIGO`, `Lyria`, `ICE`, `INTERCITES`, `INTERCITES de nuit`, `Train TER`, `Train` (OUIGO Train Classique), `TramTrain`, `Navette`, `Car TER`, `Car à réservation`. An unknown brand stops the run, because it means the feed format changed.
 
@@ -190,6 +192,18 @@ timetable:
       script: ../imported_data/gtfs/sncf_patched.lua
 ```
 
+## Use case 4: localities
+
+A rider going from Paris to Marseille does not pick a station, but GTFS has no object for "Paris, any station": a station cannot have a parent, and `areas.txt` is fare-scoped. MOTIS fills the gap with stop groups: a stop that has no position of its own and resolves to a set of stations when used as origin or destination.
+
+The grouping comes from `stations_to_localities.csv` (`station_id`, `station_name`, `locality_id`, `locality_name`), a static referential derived from the Trainline stations database: a station is kept when its 8-digit UIC appears in the SNCF feed, its locality is the root of Trainline's `parent_station_id` chain, and localities with a single station are dropped. `locality_id` is Trainline's id, since most localities (Marseille, Toulouse, Bordeaux) have no UIC code of their own. The referential holds 385 stations in 154 localities.
+
+1. Keep the referential rows whose station is a `location_type` 1 stop area of the feed (the UIC is the last 8 characters of the stop id), then drop the localities left with a single station.
+2. `stops.txt`: the original file, untouched, with one row per locality appended: `stop_id` `CITY_<locality_id>`, `stop_name` the locality name followed by ` (toutes gares)`, `stop_lat` and `stop_lon` 0, `location_type` 0, every other column empty. The zero coordinates are what MOTIS expects for a group stop.
+3. `stop_group_elements.txt`, a new file in the feed: `stop_group_id,stop_id`, one row per station of each locality, from the `CITY_` id to the `StopArea:` id.
+
+In the 2026-09-14 feed, 151 localities and 379 elements are written.
+
 ## Running
 
 Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
@@ -198,9 +212,9 @@ Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
 ./gradlew run
 ```
 
-Downloads go to `feeds/`, results to `output/`: the four patched files and `sncf_patched.zip`. `sncf_patched.lua` next to them is not generated, it is the MOTIS script of use case 3.
+Downloads go to `input/`, results to `output/`: `sncf_patched.zip`, with the five patched files and `stop_group_elements.txt` in `output/txt/`. `sncf_patched.lua` next to them is not generated, it is the MOTIS script of use case 3.
 
 ## License
 
 - **Code**: [MIT](LICENSE).
-- **Data** (`unusual_uic_referential.properties` and the patched feed this tool produces): [Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), see [LICENSE-ODbL](LICENSE-ODbL).
+- **Data** (`unusual_uic_referential.csv`, `stations_to_localities.csv` derived from the [Trainline stations database](https://github.com/trainline-eu/stations), and the patched feed this tool produces): [Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), see [LICENSE-ODbL](LICENSE-ODbL).
