@@ -3,7 +3,8 @@
 Patches the SNCF open data GTFS feed with information the feed does not carry on its own:
 
 1. **Transfers** (`transfers.txt`), computed from the SNCF transfer-time rules (IDH export), with `calendar_dates.txt` extended so that date-limited rules only apply on their dates.
-2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids, with a name built from the route id.
+2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), the brand of every trip in `trip_short_name`, and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids, with a name built from the route id.
+3. **Display names** (`output/sncf_patched.lua`): a [MOTIS](https://github.com/motis-project/motis) user script that labels every trip `<brand> <train number>` from that `trip_short_name`.
 
 The result is the original feed, unchanged except for those four files, written to `output/sncf_patched.zip`.
 
@@ -139,7 +140,7 @@ GTFS `route_type` lives on the route, but an SNCF route can mix modes: a train l
 | `Car à réservation` | 715 (demand and response bus) |
 
 3. `routes.txt`: `route_type` becomes the extended type. A route served by one brand takes that brand's type. A route mixing brands keeps the family of its original `route_type`: type 2 (rail) served by `Train TER` and `Car TER` becomes 106, the rail one. Several brands in that family (`Navette` and `Car à réservation` on a bus route): the basic `route_type` is not precise enough to pick one, so the route keeps it and every trip gets a `trip_route_type`, logged as a warning. No brand in that family: the run stops, the feed changed shape.
-4. `trips.txt`: each trip takes the brand of its stop points (a trip is served by one brand). When its extended type differs from its route's patched `route_type` (the `Car TER` trips of that line), it is written in `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case. Otherwise the column is empty. [MOTIS](https://github.com/motis-project/motis) consumes it.
+4. `trips.txt`: each trip takes the brand of its stop points (a trip is served by one brand). When its extended type differs from its route's patched `route_type` (the `Car TER` trips of that line), it is written in `trip_route_type`, the [MBTA GTFS extension](https://github.com/mbta/gtfs-documentation/blob/master/reference/gtfs.md#tripstxt) for exactly this case. Otherwise the column is empty. [MOTIS](https://github.com/motis-project/motis) consumes it. The brand itself goes in `trip_short_name` as its identifier (`TRAIN_TER`, `CAR_TER`, the enum names of `SncfBrand`), a column the source feed does not have. Use case 3 reads it.
 
 In the 2026-09-14 feed, 282 of 688 routes mix brands, every one of them a train brand plus a road brand on a `route_type` 2. The values are the extended route types used by Google and most routers.
 
@@ -156,6 +157,37 @@ The trips of those routes still carry their undertaking's RICS in the trip id. W
 
 The same routes have `-` as `route_long_name`, but their id is `OCESN-<origin UIC>-<destination UIC>`. For these `OCEdefault` routes only, the name becomes `origin - destination` from the names of those two stations in `stops.txt`, the form SNCF uses elsewhere (`Nevers - Decize`). If either station is missing the placeholder stays and a warning is logged.
 
+## Use case 3: display names in MOTIS
+
+MOTIS labels a trip with a display name that a [Lua user script](https://github.com/motis-project/motis/blob/master/docs/scripting.md) can set when the feed is loaded. `output/sncf_patched.lua` is that script for the patched feed, the same approach as the [Transitous script](https://github.com/public-transport/transitous/blob/main/scripts/fr-sncf.lua) for the raw feed. It reads the brand from `trip_short_name` and the train number from `trip_headsign`, and sets the display name to `<brand> <train number>`: `TGV Inoui 8541`, `Car TER 12`.
+
+| `trip_short_name` | Display label |
+|---|---|
+| `TGV_INOUI` | TGV Inoui |
+| `OUIGO` | OUIGO |
+| `LYRIA` | TGV Lyria |
+| `ICE` | ICE |
+| `INTERCITES` | IC |
+| `INTERCITES_DE_NUIT` | IC de nuit |
+| `TRAIN_TER` | Train TER |
+| `OUIGO_TRAIN_CLASSIQUE` | OUIGO TC |
+| `TRAMTRAIN` | Tram-train |
+| `NAVETTE` | Navette |
+| `CAR_TER` | Car TER |
+| `CAR_A_RESERVATION` | Car à résa |
+
+A value missing from the table is used as is.
+
+MOTIS picks the script up through the `script` key of the dataset, a path relative to the config file:
+
+```yaml
+timetable:
+  datasets:
+    sncf:
+      path: ../imported_data/gtfs/sncf_patched.zip
+      script: ../imported_data/gtfs/sncf_patched.lua
+```
+
 ## Running
 
 Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
@@ -164,7 +196,7 @@ Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
 ./gradlew run
 ```
 
-Downloads go to `feeds/`, results to `output/`: the four patched files and `sncf_patched.zip`.
+Downloads go to `feeds/`, results to `output/`: the four patched files and `sncf_patched.zip`. `sncf_patched.lua` next to them is not generated, it is the MOTIS script of use case 3.
 
 ## License
 
