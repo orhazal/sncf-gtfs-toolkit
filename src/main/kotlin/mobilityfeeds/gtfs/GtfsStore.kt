@@ -26,7 +26,7 @@ fun writeGtfsWithReplacements(
             var entry = zis.nextEntry
             while (entry != null) {
                 val replacement = replacements[entry.name]
-                zos.putNextEntry(ZipEntry(entry.name))
+                zos.putNextEntry(ZipEntry(entry.name).apply { time = entry.time }) // source timestamps: same input, same bytes
                 if (replacement != null) {
                     replacement.inputStream().use { it.copyTo(zos) }
                 } else {
