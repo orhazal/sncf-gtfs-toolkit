@@ -18,7 +18,7 @@ The result is the original feed, unchanged except for those five files plus the 
 | `unusual_uic_referential.csv` | `input/other` | Matching stations between the two datasets |
 | `stations_to_localities.csv` | `input/other`, derived from the [Trainline stations database](https://github.com/trainline-eu/stations) | Localities |
 
-Both archives are downloaded on every run into `input/`.
+Both archives are downloaded on every run into `input/`, from the URLs in `input/sources.json`, which the release workflow reads too.
 
 ## How the two datasets are matched
 
@@ -222,12 +222,12 @@ A GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/r
 https://github.com/orhazal/sncf-gtfs-toolkit/releases/latest/download/sncf_patched.zip
 ```
 
-1. Every 15 minutes, a `HEAD` request on the GTFS export and on the IDH transfer rules reads their `Last-Modified` dates. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else runs. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
+1. Every 15 minutes, a `HEAD` request on the GTFS export and on the IDH transfer rules reads their `Last-Modified` dates. The trigger is a [cron-job.org](https://cron-job.org) job calling the workflow's `workflow_dispatch` endpoint, since GitHub's own schedule fires late or not at all. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else runs. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
 2. Otherwise the app runs with `--no-txt`, then both dates are read again: if either file changed during the run, the run stops and the next one takes the newer files.
 3. Both the raw feed and `sncf_patched.zip` go through the [MobilityData GTFS validator](https://github.com/MobilityData/gtfs-validator). Any error in the raw feed, or any error other than `point_near_origin` in the patched one (the `CITY_` stops at 0,0 of use case 4), stops the run without a release.
 4. The release carries `sncf_patched.zip`, `sncf_patched_without_transfers.zip`, `sncf_patched.lua` and the two validation reports.
 
-A run that fails, because SNCF changed the feed's shape or the validator found errors, publishes nothing and leaves the previous release as the latest. GitHub disables the schedule of a public repository after 60 days without a commit.
+A run that fails, because SNCF changed the feed's shape or the validator found errors, publishes nothing and leaves the previous release as the latest.
 
 ## License
 

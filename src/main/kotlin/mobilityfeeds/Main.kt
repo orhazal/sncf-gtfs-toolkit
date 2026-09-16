@@ -27,20 +27,15 @@ private val routesFile = File(txtPath, "routes.txt")
 private val tripsFile = File(txtPath, "trips.txt")
 private val stopsFile = File(txtPath, "stops.txt")
 private val stopGroupElementsFile = File(txtPath, "stop_group_elements.txt")
+// ponytail: flat string map read with a regex, a JSON library if the file grows beyond that
+private val sources = Regex("\"(\\w+)\": *\"([^\"]+)\"").findAll(File("input/sources.json").readText()).associate { it.groupValues[1] to it.groupValues[2] }
+
 private val patchedGtfsFile = File(outputPath, "sncf_patched.zip")
 private val patchedGtfsWithoutTransfersFile = File(outputPath, "sncf_patched_without_transfers.zip")
 
 fun main(args: Array<String>) {
-    val gtfsZip = download(
-        type = "gtfs",
-        name = "sncf",
-        url = "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip"
-    )
-    val sncfRulesZip = download(
-        type = "other",
-        name = "sncf_transfer_rules",
-        url = "https://eu.ftp.opendatasoft.com/sncf/prr/temps_correspondance/INFOTRAINS_Export_IDH.zip"
-    )
+    val gtfsZip = download(type = "gtfs", name = "sncf", url = sources.getValue("gtfs"))
+    val sncfRulesZip = download(type = "other", name = "sncf_transfer_rules", url = sources.getValue("idh"))
 
     val gtfsStore = getGtfsStore(gtfsZip)
     val indexes = buildIndexes(gtfsStore, getUicReferential())

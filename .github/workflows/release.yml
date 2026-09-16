@@ -1,11 +1,9 @@
-# Every 15 minutes: HEAD the SNCF GTFS and the IDH transfer rules. When the pair of Last-Modified dates has no release yet,
+# Started every 15 minutes by a cron-job.org job (workflow_dispatch): HEAD the SNCF GTFS and the IDH transfer rules. When the pair of Last-Modified dates has no release yet,
 # download and patch, validate raw and patched with the MobilityData validator, and publish a GitHub release
 # tagged with both dates.
 name: Release patched GTFS
 
 on:
-  schedule:
-    - cron: "2,17,32,47 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -13,18 +11,18 @@ permissions:
 
 env:
   GH_TOKEN: ${{ github.token }}
-  GTFS_URL: https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip
-  IDH_URL: https://eu.ftp.opendatasoft.com/sncf/prr/temps_correspondance/INFOTRAINS_Export_IDH.zip
 
 jobs:
   release:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v5
+
       - name: Check the sources' Last-Modified against the releases
         id: sources
         run: |
-          modified() { curl -sSI "$1" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
-          gtfs=$(modified "$GTFS_URL"); idh=$(modified "$IDH_URL")
+          modified() { curl -sSI "$(jq -r ".$1" input/sources.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          gtfs=$(modified gtfs); idh=$(modified idh)
           test -n "$gtfs" -a -n "$idh"
           tag="$(date -u -d "$gtfs" +%Y-%m-%dT%H-%M-%SZ)_$(date -u -d "$idh" +%Y-%m-%dT%H-%M-%SZ)"
           echo "gtfs=$gtfs" >> "$GITHUB_OUTPUT"
@@ -36,8 +34,6 @@ jobs:
             echo "new=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: actions/checkout@v5
-        if: steps.sources.outputs.new == 'true'
       - uses: actions/setup-java@v5
         if: steps.sources.outputs.new == 'true'
         with:
@@ -50,8 +46,8 @@ jobs:
         run: |
           ./gradlew run -q --args="--no-txt"
           # the app downloads both files itself: make sure neither was published again meanwhile, the next run will take it
-          modified() { curl -sSI "$1" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
-          test "$(modified "$GTFS_URL")" = "${{ steps.sources.outputs.gtfs }}" -a "$(modified "$IDH_URL")" = "${{ steps.sources.outputs.idh }}"
+          modified() { curl -sSI "$(jq -r ".$1" input/sources.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          test "$(modified gtfs)" = "${{ steps.sources.outputs.gtfs }}" -a "$(modified idh)" = "${{ steps.sources.outputs.idh }}"
           echo "version=$(unzip -p input/gtfs/sncf.zip feed_info.txt | tail -n +2 | cut -d, -f7)" >> "$GITHUB_OUTPUT"
 
       - name: Validate raw and patched feeds
