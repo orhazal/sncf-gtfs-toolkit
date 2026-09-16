@@ -1,0 +1,11 @@
+[Unit]
+Description=Dispatch the SNCF GTFS release workflow when the sources changed
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+DynamicUser=yes
+StateDirectory=sncf-release-trigger
+EnvironmentFile=/etc/sncf-release-trigger.env
+ExecStart=/opt/sncf-gtfs-toolkit/scripts/release-trigger.sh
