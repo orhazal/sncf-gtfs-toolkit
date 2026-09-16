@@ -1,5 +1,6 @@
 package mobilityfeeds.gtfs
 
+import org.apache.commons.csv.CSVFormat
 import org.onebusaway.gtfs.impl.GtfsDaoImpl
 import org.onebusaway.gtfs.serialization.GtfsReader
 import java.io.File
@@ -8,12 +9,13 @@ import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 fun getGtfsStore(gtfsZip: File): GtfsDaoImpl {
-    val reader = GtfsReader()
-    reader.setInputLocation(gtfsZip)
-    reader.entityStore = GtfsDaoImpl()
-    reader.run()
-    return (reader.entityStore as? GtfsDaoImpl) ?: error("GtfsDaoImpl not initialized")
+    val store = GtfsDaoImpl()
+    GtfsReader().apply { setInputLocation(gtfsZip); entityStore = store }.run()
+    return store
 }
+
+// Format of the patched files: the given header, LF records like the SNCF GTFS files
+fun lfCsv(vararg header: String): CSVFormat = CSVFormat.DEFAULT.builder().setRecordSeparator("\n").setHeader(*header).get()
 
 // Copies every entry from the source GTFS zip, replacing the ones whose name matches a provided file and adding the others
 fun writeGtfsWithReplacements(

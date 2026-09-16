@@ -1,8 +1,8 @@
 package mobilityfeeds.patch
 
-import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.slf4j.LoggerFactory
+import mobilityfeeds.gtfs.lfCsv
 import mobilityfeeds.sncf.GtfsIndexes
 import mobilityfeeds.sncf.Mode
 import mobilityfeeds.sncf.SncfBrand
@@ -264,16 +264,7 @@ fun deduplicateByPriority(transfers: Set<Transfer>): Set<Transfer> =
         .toSet()
 
 private fun writeTransfersFile(transfers: Set<Transfer>, output: File) {
-    val format = CSVFormat.DEFAULT.builder()
-        .setRecordSeparator("\n") // SNCF GTFS files are LF
-        .setHeader(
-            "from_stop_id", "to_stop_id",
-            "transfer_type", "min_transfer_time",
-            "from_route_id", "to_route_id",
-            "from_trip_id", "to_trip_id",
-            "service_id"
-        )
-        .get()
+    val format = lfCsv("from_stop_id", "to_stop_id", "transfer_type", "min_transfer_time", "from_route_id", "to_route_id", "from_trip_id", "to_trip_id", "service_id")
     output.bufferedWriter().use { writer ->
         CSVPrinter(writer, format).use { printer ->
             transfers.forEach {

@@ -54,9 +54,6 @@ fun buildIndexes(gtfsStore: GtfsDaoImpl, uic7ByUic8: Map<String, String>): GtfsI
             ?: error("Stop id format changed: $stopId, review immediately")
 
         val brandFromStop = SncfBrand.fromValue(stopType)
-        if (brandFromStop == SncfBrand.UNKNOWN) {
-            error("Careful, stop type not matched for $stopType, a new one?")
-        }
 
         val uic8FromStopId = stopId.substring(stopId.length - 8)
         // On récupère le code UIC7 du référentiel des gares SNCF, sinon on strip le dernier char

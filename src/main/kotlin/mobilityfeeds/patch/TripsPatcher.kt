@@ -1,7 +1,7 @@
 package mobilityfeeds.patch
 
+import mobilityfeeds.gtfs.lfCsv
 import mobilityfeeds.sncf.SncfBrand
-import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.onebusaway.gtfs.model.Trip
 import org.slf4j.LoggerFactory
@@ -17,19 +17,13 @@ fun patchTrips(
     routeTypeByRoute: Map<String, Int>,
     output: File,
 ) {
-    val format = CSVFormat.DEFAULT.builder()
-        .setRecordSeparator("\n") // SNCF GTFS files are LF
-        .setHeader(
-            "route_id", "service_id", "trip_id", "trip_headsign", "direction_id",
-            "block_id", "shape_id", "trip_short_name", "trip_route_type"
-        )
-        .get()
+    val format = lfCsv("route_id", "service_id", "trip_id", "trip_headsign", "direction_id", "block_id", "shape_id", "trip_short_name", "trip_route_type")
     var patched = 0
     output.bufferedWriter().use { writer ->
         CSVPrinter(writer, format).use { printer ->
             trips.forEach { trip ->
                 val brand = brandByTrip.getValue(trip.id.id)
-                val tripRouteType = brand.extendedRouteType.value
+                val tripRouteType = brand.extendedRouteType
                     .takeIf { it != routeTypeByRoute.getValue(trip.route.id.id) }
                 if (tripRouteType != null) patched++
                 printer.printRecord(

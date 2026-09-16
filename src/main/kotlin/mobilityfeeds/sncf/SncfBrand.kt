@@ -1,28 +1,33 @@
 package mobilityfeeds.sncf
 
-import mobilityfeeds.gtfs.GtfsExtendedRouteType
+// Brand as found in SNCF stop point ids (StopPoint:OCE<brand>-<uic8>), with the GTFS extended route type (Google / TPEG) it maps to
+enum class SncfBrand(val extendedRouteType: Int, val stopIdBrand: String) {
+    TGV_INOUI(101, "TGV INOUI"), // high speed rail
+    OUIGO(101, "OUIGO"),
+    LYRIA(101, "Lyria"),
+    ICE(101, "ICE"),
+    INTERCITES(102, "INTERCITES"), // long distance rail
+    INTERCITES_DE_NUIT(105, "INTERCITES de nuit"), // sleeper rail
+    TRAIN_TER(106, "Train TER"), // regional rail
+    OUIGO_TRAIN_CLASSIQUE(102, "Train"),
+    TRAMTRAIN(900, "TramTrain"), // tram
+    NAVETTE(711, "Navette"), // shuttle bus
+    CAR_TER(701, "Car TER"), // regional bus
+    CAR_A_RESERVATION(715, "Car à réservation"); // demand and response bus
 
-// Brand as found in SNCF stop point ids (StopPoint:OCE<brand>-<uic8>), mapped to a GTFS extended route type
-enum class SncfBrand(
-    val extendedRouteType: GtfsExtendedRouteType,
-    val stopIdBrand: String,
-) {
-    TGV_INOUI(GtfsExtendedRouteType.HIGH_SPEED_RAIL_SERVICE, "TGV INOUI"),
-    OUIGO(GtfsExtendedRouteType.HIGH_SPEED_RAIL_SERVICE, "OUIGO"),
-    LYRIA(GtfsExtendedRouteType.HIGH_SPEED_RAIL_SERVICE, "Lyria"),
-    ICE(GtfsExtendedRouteType.HIGH_SPEED_RAIL_SERVICE, "ICE"),
-    INTERCITES(GtfsExtendedRouteType.LONG_DISTANCE_TRAINS, "INTERCITES"),
-    INTERCITES_DE_NUIT(GtfsExtendedRouteType.SLEEPER_RAIL_SERVICE, "INTERCITES de nuit"),
-    TRAIN_TER(GtfsExtendedRouteType.REGIONAL_RAIL_SERVICE, "Train TER"),
-    OUIGO_TRAIN_CLASSIQUE(GtfsExtendedRouteType.LONG_DISTANCE_TRAINS, "Train"),
-    TRAMTRAIN(GtfsExtendedRouteType.TRAM_SERVICE, "TramTrain"),
-    NAVETTE(GtfsExtendedRouteType.SHUTTLE_BUS, "Navette"),
-    CAR_TER(GtfsExtendedRouteType.REGIONAL_BUS_SERVICE, "Car TER"),
-    CAR_A_RESERVATION(GtfsExtendedRouteType.DEMAND_AND_RESPONSE_BUS_SERVICE, "Car à réservation"),
-    UNKNOWN(GtfsExtendedRouteType.RAILWAY_SERVICE, "UNKNOWN");
+    // Basic GTFS route_type the extended type refines: 0 tram, 1 subway, 2 rail, 3 bus, 11 trolleybus
+    val basicRouteType: Int
+        get() = when (extendedRouteType / 100) {
+            1, 3 -> 2
+            4, 5, 6 -> 1
+            2, 7 -> 3
+            8 -> 11
+            9 -> 0
+            else -> -1
+        }
 
     companion object {
         private val byValue = entries.associateBy { it.stopIdBrand.lowercase() }
-        fun fromValue(v: String): SncfBrand = byValue[v.lowercase()] ?: UNKNOWN
+        fun fromValue(v: String): SncfBrand = byValue[v.lowercase()] ?: error("Careful, stop type not matched for $v, a new one?")
     }
 }

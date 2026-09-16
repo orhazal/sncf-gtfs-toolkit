@@ -1,7 +1,7 @@
 package mobilityfeeds.patch
 
+import mobilityfeeds.gtfs.lfCsv
 import mobilityfeeds.sncf.SncfBrand
-import org.apache.commons.csv.CSVFormat
 import org.apache.commons.csv.CSVPrinter
 import org.onebusaway.gtfs.model.Route
 import org.onebusaway.gtfs.model.Stop
@@ -31,10 +31,10 @@ fun patchRoutes(
 ): Map<String, Int> {
     val routeTypeByRoute = routes.associate { route ->
         val brands = brandsByRoute[route.id.id] ?: error("Route ${route.id.id} has no stop time")
-        val candidates = if (brands.size == 1) brands else brands.filter { it.extendedRouteType.basicRouteType == route.type }
+        val candidates = if (brands.size == 1) brands else brands.filter { it.basicRouteType == route.type }
 
         val routeType = when (candidates.size) {
-            1 -> candidates.single().extendedRouteType.value
+            1 -> candidates.single().extendedRouteType
             0 -> error("Route ${route.id.id} (route_type ${route.type}) mixes $brands, none refines its route_type")
             else -> {
                 logger.warn("[ROUTES] ${route.id.id} (route_type ${route.type}) mixes $brands in the same family, keeping route_type ${route.type}")
@@ -69,13 +69,7 @@ fun patchRoutes(
         route.id.id to longName
     }
 
-    val format = CSVFormat.DEFAULT.builder()
-        .setRecordSeparator("\n") // SNCF GTFS files are LF
-        .setHeader(
-            "route_id", "agency_id", "route_short_name", "route_long_name", "route_desc",
-            "route_type", "route_url", "route_color", "route_text_color"
-        )
-        .get()
+    val format = lfCsv("route_id", "agency_id", "route_short_name", "route_long_name", "route_desc", "route_type", "route_url", "route_color", "route_text_color")
     output.bufferedWriter().use { writer ->
         CSVPrinter(writer, format).use { printer ->
             routes.forEach { route ->
