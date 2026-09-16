@@ -25,8 +25,9 @@ test('trip updates', () => {
 test('service alerts', () => {
   const out = patchAlerts([
     { id: 'a', alert: { informedEntity: [{ trip: { tripId: 'OCESN100F' } }, { stopId: 'StopArea:OCE87000001' }] } },
-    { id: 'b', alert: { informedEntity: [{ trip: { tripId: 'OCESN999F' } }] } }, // nothing left: dropped
-  ], lk);
+    { id: 'b', alert: { informedEntity: [{ trip: { tripId: 'OCESN100F', startDate: '20260917' } }] } }, // its own date wins
+    { id: 'c', alert: { informedEntity: [{ trip: { tripId: 'OCESN999F' } }] } }, // nothing left: dropped
+  ], lk, '20260916');
   assert.deepEqual(out.map(e => e.alert.informedEntity.map(ie => ie.trip?.tripId ?? ie.stopId)),
-    [[T(100, 'F', 20260101), T(100, 'F', 20260301), 'StopArea:OCE87000001']]);
+    [[T(100, 'F', 20260101), 'StopArea:OCE87000001'], [T(100, 'F', 20260301)]]);
 });

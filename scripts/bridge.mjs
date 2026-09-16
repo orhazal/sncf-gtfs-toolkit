@@ -3,6 +3,8 @@
 // GTFS and rebuild the lookup when it changed.
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 import gtfsRealtime from 'gtfs-realtime-bindings';
 import { lookupFromZip, patchTripUpdates, patchAlerts } from './patch.mjs';
 
@@ -15,8 +17,10 @@ const FEEDS = {
 const PORT = Number(process.env.PORT ?? 8080);
 const FEED_INTERVAL = 30_000, GTFS_INTERVAL = 5 * 60_000, STALE_AFTER = 5 * 60_000;
 
-let lookup, gtfsModified;
+let lookup, gtfsModified, gtfsLoadedAt;
 const served = new Map(); // feed name -> { body, at, timestamp, entities }
+const counters = Object.fromEntries(Object.keys(FEEDS).map(name => [name, { refreshes: 0, errors: 0, lastError: undefined }]));
+const startedAt = new Date();
 
 async function get(url, init) {
   const r = await fetch(url, { signal: AbortSignal.timeout(60_000), ...init });
@@ -35,6 +39,7 @@ async function refreshLookup() {
   if (gtfs === gtfsModified) return;
   lookup = lookupFromZip(new Uint8Array(await (await get(config.gtfs_url)).arrayBuffer()));
   gtfsModified = gtfs;
+  gtfsLoadedAt = new Date();
   console.log(`GTFS of ${gtfs}: ${lookup.trips.size} trips, ${lookup.byShort.size} train numbers`);
   if (!served.size) await refreshFeeds();
 }
@@ -45,26 +50,55 @@ async function refreshFeeds() {
     try {
       const message = FeedMessage.decode(new Uint8Array(await (await get(feed.url)).arrayBuffer()));
       const before = message.entity.length;
-      message.entity = feed.patch(message.entity, lookup);
+      const today = new Date(Number(message.header.timestamp) * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+      message.entity = feed.patch(message.entity, lookup, today);
       served.set(name, { body: FeedMessage.encode(message).finish(), at: new Date(), timestamp: Number(message.header.timestamp), entities: `${before} -> ${message.entity.length}` });
+      counters[name].refreshes++;
     } catch (e) {
+      counters[name].errors++;
+      counters[name].lastError = { at: new Date(), message: e.message };
       console.error(`${name}: ${e.message}`); // the previous feed stays served
     }
   }));
 }
 
+const feedInfo = name => { const f = served.get(name); return f && { fetched: f.at, feedTimestamp: new Date(f.timestamp * 1000), entities: f.entities, bytes: f.body.length }; };
+
 function status() {
-  const feeds = Object.fromEntries([...served].map(([name, f]) => [name, { fetched: f.at, feedTimestamp: new Date(f.timestamp * 1000), entities: f.entities }]));
+  const feeds = Object.fromEntries(Object.keys(FEEDS).filter(name => served.has(name)).map(name => [name, feedInfo(name)]));
   const fresh = Object.keys(FEEDS).every(name => served.has(name) && Date.now() - served.get(name).at < STALE_AFTER);
   return { fresh, gtfsModified, feeds };
 }
 
-createServer((req, res) => {
+// What systemd knows about a unit, undefined when there is no systemd or no such unit.
+async function unit(name, properties) {
+  try {
+    const { stdout } = await promisify(execFile)('systemctl', ['show', name, '-p', 'LoadState,' + properties.join(',')], { timeout: 3000 });
+    const values = Object.fromEntries(stdout.trim().split('\n').map(line => line.split(/=(.*)/s).slice(0, 2)));
+    return values.LoadState === 'not-found' ? undefined : Object.fromEntries(properties.map(p => [p, values[p] || undefined]));
+  } catch { return undefined; }
+}
+
+async function stats() {
+  const [service, timer] = await Promise.all([
+    unit('sncf-release-trigger.service', ['ExecMainStartTimestamp', 'ExecMainExitTimestamp', 'Result', 'ExecMainStatus']),
+    unit('sncf-release-trigger.timer', ['LastTriggerUSec', 'NextElapseUSecRealtime']),
+  ]);
+  return {
+    ...status(),
+    bridge: { startedAt, uptimeSeconds: Math.round(process.uptime()), rssMB: Math.round(process.memoryUsage().rss / 1e6), node: process.version },
+    gtfs: lookup && { modified: gtfsModified, loadedAt: gtfsLoadedAt, trips: lookup.trips.size, trainNumbers: lookup.byShort.size },
+    feeds: Object.fromEntries(Object.keys(FEEDS).map(name => [name, { ...feedInfo(name), ...counters[name] }])),
+    releaseTrigger: service || timer ? { lastRun: service?.ExecMainStartTimestamp, lastExit: service?.ExecMainExitTimestamp, result: service?.Result, exitStatus: service?.ExecMainStatus, lastTrigger: timer?.LastTriggerUSec, nextTrigger: timer?.NextElapseUSecRealtime } : undefined,
+  };
+}
+
+const json = (res, code, body) => res.writeHead(code, { 'content-type': 'application/json' }).end(JSON.stringify(body, null, 1));
+
+createServer(async (req, res) => {
   const name = req.url.slice(1).split('?')[0];
-  if (name === '') {
-    const s = status();
-    return res.writeHead(s.fresh ? 200 : 503, { 'content-type': 'application/json' }).end(JSON.stringify(s, null, 1));
-  }
+  if (name === '') { const s = status(); return json(res, s.fresh ? 200 : 503, s); }
+  if (name === 'stats') return json(res, 200, await stats());
   const f = served.get(name);
   if (!f) return res.writeHead(name in FEEDS ? 503 : 404).end();
   res.writeHead(200, { 'content-type': 'application/x-protobuf', 'content-length': f.body.length, 'last-modified': f.at.toUTCString(), 'cache-control': 'no-cache' }).end(f.body);

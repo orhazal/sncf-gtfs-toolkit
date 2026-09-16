@@ -56,12 +56,14 @@ export function patchTripUpdates(entities, lk) {
   return out;
 }
 
-export function patchAlerts(entities, lk) {
+// today: the service day consumers resolve a trip against when the descriptor has no start_date. nigiri takes the
+// UTC date of the feed header's timestamp, so the bridge passes it and only emits the trips running that day.
+export function patchAlerts(entities, lk, today) {
   const out = [];
   for (const e of entities) {
     if (!e.alert) { out.push(e); continue; }
     const informed = e.alert.informedEntity.flatMap(ie => ie.trip?.tripId
-      ? resolve(lk, ie.trip).map(tripId => ({ ...ie, trip: { ...ie.trip, tripId } }))
+      ? resolve(lk, { tripId: ie.trip.tripId, startDate: ie.trip.startDate || today }).map(tripId => ({ ...ie, trip: { ...ie.trip, tripId } }))
       : [ie]);
     if (informed.length) { e.alert.informedEntity = informed; out.push(e); }
   }
