@@ -1,18 +1,18 @@
 -- MOTIS user script for output/sncf_patched.zip: trip_short_name holds the SncfBrand enum name,
 -- trip_headsign the train number. Display name becomes "<brand> <train number>".
 local BRANDS = {
-    TGV_INOUI = 'TGV Inoui',
-    OUIGO = 'OUIGO',
-    LYRIA = 'TGV Lyria',
+    CAR_A_RESERVATION = 'Car à résa',
+    CAR_TER = 'TER',
     ICE = 'ICE',
     INTERCITES = 'IC',
     INTERCITES_DE_NUIT = 'IC de nuit',
-    TRAIN_TER = 'Train TER',
-    OUIGO_TRAIN_CLASSIQUE = 'OUIGO TC',
-    TRAMTRAIN = 'Tram-train',
+    LYRIA = 'TGV Lyria',
     NAVETTE = 'Navette',
-    CAR_TER = 'Car TER',
-    CAR_A_RESERVATION = 'Car à résa',
+    OUIGO = 'OUIGO',
+    OUIGO_TRAIN_CLASSIQUE = 'OUIGO TC',
+    TGV_INOUI = 'TGV INOUI',
+    TRAIN_TER = 'TER',
+    TRAMTRAIN = 'Tram-train',
 }
 
 function process_trip(trip)
