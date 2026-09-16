@@ -17,7 +17,7 @@ private val csvFormat = CSVFormat.DEFAULT.builder().setRecordSeparator("\n").get
 fun patchStops(gtfsZip: File, stops: Collection<Stop>, stopsOutput: File, groupsOutput: File) {
     val stopIdByUic8 = stops.filter { it.locationType == 1 }.associate { it.id.id.takeLast(8) to it.id.id }
 
-    val localities = File("input/other/stations_to_localities.csv").bufferedReader().use { reader ->
+    val localities = File("data/stations_to_localities.csv").bufferedReader().use { reader ->
         csvFormat.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader)
             .mapNotNull { row -> stopIdByUic8[row["station_id"]]?.let { Locality(row["locality_id"], row["locality_name"]) to it } }
             .groupBy({ it.first }, { it.second })

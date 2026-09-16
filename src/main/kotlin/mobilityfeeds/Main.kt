@@ -28,14 +28,14 @@ private val tripsFile = File(txtPath, "trips.txt")
 private val stopsFile = File(txtPath, "stops.txt")
 private val stopGroupElementsFile = File(txtPath, "stop_group_elements.txt")
 // ponytail: flat string map read with a regex, a JSON library if the file grows beyond that
-private val sources = Regex("\"(\\w+)\": *\"([^\"]+)\"").findAll(File("input/sources.json").readText()).associate { it.groupValues[1] to it.groupValues[2] }
+private val sources = Regex("\"(\\w+)\": *\"([^\"]+)\"").findAll(File("data/config.json").readText()).associate { it.groupValues[1] to it.groupValues[2] }
 
 private val patchedGtfsFile = File(outputPath, "sncf_patched.zip")
 private val patchedGtfsWithoutTransfersFile = File(outputPath, "sncf_patched_without_transfers.zip")
 
 fun main(args: Array<String>) {
-    val gtfsZip = download(type = "gtfs", name = "sncf", url = sources.getValue("gtfs"))
-    val sncfRulesZip = download(type = "other", name = "sncf_transfer_rules", url = sources.getValue("idh"))
+    val gtfsZip = download(name = "sncf", url = sources.getValue("gtfs_url"))
+    val sncfRulesZip = download(name = "sncf_transfer_rules", url = sources.getValue("transfer_rules_url"))
 
     val gtfsStore = getGtfsStore(gtfsZip)
     val indexes = buildIndexes(gtfsStore, getUicReferential())
@@ -91,8 +91,8 @@ fun main(args: Array<String>) {
     if ("--no-txt" in args) txtPath.deleteRecursively() // the zips are the deliverable, the workflow does not want the txt files around
 }
 
-fun download(type: String, name: String, url: String): File {
-    val local = File("input/$type", "$name.zip").apply { parentFile.mkdirs() }
+fun download(name: String, url: String): File {
+    val local = File("download", "$name.zip").apply { parentFile.mkdirs() }
     logger.info("Downloading $url -> ${local.path}")
     val response = httpClient.send(
         HttpRequest.newBuilder(URI.create(url)).build(),

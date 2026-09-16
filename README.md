@@ -4,7 +4,7 @@ Patches the SNCF open data GTFS feed with information the feed does not carry on
 
 1. **Transfers** (`transfers.txt`), computed from the SNCF transfer-time rules (IDH export), with `calendar_dates.txt` extended so that date-limited rules only apply on their dates.
 2. **Route types and agencies** (`routes.txt`, `trips.txt`): `route_type` refined to the extended type of the brand serving each route, a `trip_route_type` on the trips that differ from their route (replacement buses on a train line), the brand of every trip in `trip_short_name`, and the `OCEdefault` fallback agency replaced by the undertaking found in the trip ids, with a name built from the route id.
-3. **Display names** (`output/sncf_patched.lua`): a [MOTIS](https://github.com/motis-project/motis) user script that labels every trip `<brand> <train number>` from that `trip_short_name`.
+3. **Display names** (`data/sncf_display_name_fix.lua`): a [MOTIS](https://github.com/motis-project/motis) user script that labels every trip `<brand> <train number>` from that `trip_short_name`.
 4. **Localities** (`stops.txt`, `stop_group_elements.txt`): one `CITY_<id>` stop per city with several stations, and the list of its stations, so that a search from "Paris" can start from any Paris station. MOTIS stop groups, not GTFS.
 
 The result is the original feed, unchanged except for those five files plus the added `stop_group_elements.txt`, written to `output/sncf_patched.zip`. `output/sncf_patched_without_transfers.zip` is the same feed without use case 1: the original `transfers.txt` and `calendar_dates.txt`.
@@ -15,16 +15,16 @@ The result is the original feed, unchanged except for those five files plus the 
 |---|---|---|
 | SNCF GTFS feed | `Export_OpenData_SNCF_GTFS_NewTripId.zip` (opendatasoft) | Everything |
 | SNCF transfer-time rules | `INFOTRAINS_Export_IDH.zip` (opendatasoft), files `Export_CONNECTION_TIMES.csv` and `Export_TRAIN_CONNECTION_TIMES.csv` | Transfers |
-| `unusual_uic_referential.csv` | `input/other` | Matching stations between the two datasets |
-| `stations_to_localities.csv` | `input/other`, derived from the [Trainline stations database](https://github.com/trainline-eu/stations) | Localities |
+| `unusual_uic.csv` | `data/` | Matching stations between the two datasets |
+| `stations_to_localities.csv` | `data/`, derived from the [Trainline stations database](https://github.com/trainline-eu/stations) | Localities |
 
-Both archives are downloaded on every run into `input/`, from the URLs in `input/sources.json`, which the release workflow reads too.
+Both archives are downloaded on every run into `download/`, from the URLs in `data/config.json`, which the release workflow and the release trigger read too.
 
 ## How the two datasets are matched
 
 The rules and the feed do not describe things the same way, so a few conventions bridge them. Everything below is read from the feed itself.
 
-**Station.** Rules identify a station by its 7-digit UIC code. A GTFS stop point id ends with the 8-digit UIC code (`StopPoint:OCETGV INOUI-87391003`). Dropping the last digit gives the 7-digit code for every French station and almost every foreign one. The few foreign stations (Germany, Italy, Switzerland) where the rules use an unrelated code are listed in `unusual_uic_referential.csv` as an explicit 8-digit to 7-digit mapping.
+**Station.** Rules identify a station by its 7-digit UIC code. A GTFS stop point id ends with the 8-digit UIC code (`StopPoint:OCETGV INOUI-87391003`). Dropping the last digit gives the 7-digit code for every French station and almost every foreign one. The few foreign stations (Germany, Italy, Switzerland) where the rules use an unrelated code are listed in `unusual_uic.csv` as an explicit 8-digit to 7-digit mapping.
 
 **Stop point.** A station has one stop point per brand or carrier serving it. The brand is the text between `OCE` and the UIC code in the stop point id: `TGV INOUI`, `OUIGO`, `Lyria`, `ICE`, `INTERCITES`, `INTERCITES de nuit`, `Train TER`, `Train` (OUIGO Train Classique), `TramTrain`, `Navette`, `Car TER`, `Car à réservation`. An unknown brand stops the run, because it means the feed format changed.
 
@@ -161,7 +161,7 @@ The same routes have `-` as `route_long_name`, but their id is `OCESN-<origin UI
 
 ## Use case 3: display names in MOTIS
 
-MOTIS labels a trip with a display name that a [Lua user script](https://github.com/motis-project/motis/blob/master/docs/scripting.md) can set when the feed is loaded. `output/sncf_patched.lua` is that script for the patched feed, the same approach as the [Transitous script](https://github.com/public-transport/transitous/blob/main/scripts/fr-sncf.lua) for the raw feed. It reads the brand from `trip_short_name` and the train number from `trip_headsign`, and sets the display name to `<brand> <train number>`: `TGV Inoui 8541`, `Car TER 12`.
+MOTIS labels a trip with a display name that a [Lua user script](https://github.com/motis-project/motis/blob/master/docs/scripting.md) can set when the feed is loaded. `data/sncf_display_name_fix.lua` is that script for the patched feed, the same approach as the [Transitous script](https://github.com/public-transport/transitous/blob/main/scripts/fr-sncf.lua) for the raw feed. It reads the brand from `trip_short_name` and the train number from `trip_headsign`, and sets the display name to `<brand> <train number>`: `TGV Inoui 8541`, `Car TER 12`.
 
 <img width="532" height="781" alt="image" src="https://github.com/user-attachments/assets/e413d45e-3b6e-41a7-95d1-4541aac9fbf7" />
 
@@ -189,7 +189,7 @@ timetable:
   datasets:
     sncf:
       path: ../imported_data/gtfs/sncf_patched.zip
-      script: ../imported_data/gtfs/sncf_patched.lua
+      script: ../imported_data/gtfs/sncf_display_name_fix.lua
 ```
 
 ## Use case 4: localities
@@ -212,7 +212,7 @@ Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
 ./gradlew run
 ```
 
-Downloads go to `input/`, results to `output/`: the two zips, with the five patched files and `stop_group_elements.txt` in `output/txt/`, unless run with `--args="--no-txt"`, which deletes them once the zips are written. `sncf_patched.lua` next to them is not generated, it is the MOTIS script of use case 3.
+Downloads go to `download/`, results to `output/`: the two zips, with the five patched files and `stop_group_elements.txt` in `output/txt/`, unless run with `--args="--no-txt"`, which deletes them once the zips are written. The MOTIS script of use case 3 is not generated, it lives in `data/`.
 
 ## Releases
 
@@ -222,14 +222,19 @@ A GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/r
 https://github.com/orhazal/sncf-gtfs-toolkit/releases/latest/download/sncf_patched.zip
 ```
 
-1. Every 15 minutes, a `HEAD` request on the GTFS export and on the IDH transfer rules reads their `Last-Modified` dates. The trigger is a [cron-job.org](https://cron-job.org) job calling the workflow's `workflow_dispatch` endpoint, since GitHub's own schedule fires late or not at all. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else runs. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
-2. Otherwise the app runs with `--no-txt`, then both dates are read again: if either file changed during the run, the run stops and the next one takes the newer files.
+1. Every 5 minutes, the [release trigger](scripts/README.md) script reads the `Last-Modified` dates of the GTFS export and of the IDH transfer rules with a `HEAD` request, and calls the workflow's `workflow_dispatch` endpoint when the pair has no release yet. GitHub's own schedule fires late or not at all, and the workflow reads both dates again as its first step. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else runs. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
+2. The app runs with `--no-txt`, then both dates are read again: if either file changed during the run, the run stops and the next one takes the newer files.
 3. Both the raw feed and `sncf_patched.zip` go through the [MobilityData GTFS validator](https://github.com/MobilityData/gtfs-validator). Any error in the raw feed, or any error other than `point_near_origin` in the patched one (the `CITY_` stops at 0,0 of use case 4), stops the run without a release.
-4. The release carries `sncf_patched.zip`, `sncf_patched_without_transfers.zip`, `sncf_patched.lua` and the two validation reports.
+4. The release carries `sncf_patched.zip`, `sncf_patched_without_transfers.zip`, `sncf_display_name_fix.lua` and the two validation reports.
 
 A run that fails, because SNCF changed the feed's shape or the validator found errors, publishes nothing and leaves the previous release as the latest.
+
+## GTFS-RT bridge
+
+[`scripts/`](scripts/README.md) holds two companion programs. The bridge is a small Node service. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds.
+The release trigger is the shell script next to it that launches the release workflow above.
 
 ## License
 
 - **Code**: [MIT](LICENSE).
-- **Data** `unusual_uic_referential.csv`, `stations_to_localities.csv` derived from the [Trainline stations database](https://github.com/trainline-eu/stations), and the patched feed this tool produces: [Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), see [LICENSE-ODbL](LICENSE-ODbL).
+- **Data** `unusual_uic.csv`, `stations_to_localities.csv` derived from the [Trainline stations database](https://github.com/trainline-eu/stations), and the patched feed this tool produces: [Open Database License (ODbL) v1.0](https://opendatacommons.org/licenses/odbl/1-0/), see [LICENSE-ODbL](LICENSE-ODbL).

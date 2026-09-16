@@ -102,6 +102,6 @@ fun serviceIdAfter(serviceId: String, offset: Int = 1): String =
     (serviceId.toInt() + offset).toString().padStart(serviceId.length, '0')
 
 // GTFS stop uic8 -> IDH uic7, for the stations where dropping the last digit gives the wrong code
-fun getUicReferential(): Map<String, String> = File("input/other/unusual_uic_referential.csv").bufferedReader().use { reader ->
+fun getUicReferential(): Map<String, String> = File("data/unusual_uic.csv").bufferedReader().use { reader ->
     CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader).associate { it["uic8"] to it["uic7"] }
 }

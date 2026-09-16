@@ -3,5 +3,5 @@ build/
 .kotlin/
 .idea/
 tmp/
-input/gtfs/sncf.zip
-input/other/sncf_transfer_rules.zip
+download/
+scripts/node_modules/

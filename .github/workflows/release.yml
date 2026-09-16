@@ -21,8 +21,8 @@ jobs:
       - name: Check the sources' Last-Modified against the releases
         id: sources
         run: |
-          modified() { curl -sSI "$(jq -r ".$1" input/sources.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
-          gtfs=$(modified gtfs); idh=$(modified idh)
+          modified() { curl -sSI "$(jq -r ".$1" data/config.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          gtfs=$(modified gtfs_url); idh=$(modified transfer_rules_url)
           test -n "$gtfs" -a -n "$idh"
           tag="$(date -u -d "$gtfs" +%Y-%m-%dT%H-%M-%SZ)_$(date -u -d "$idh" +%Y-%m-%dT%H-%M-%SZ)"
           echo "gtfs=$gtfs" >> "$GITHUB_OUTPUT"
@@ -46,16 +46,16 @@ jobs:
         run: |
           ./gradlew run -q --args="--no-txt"
           # the app downloads both files itself: make sure neither was published again meanwhile, the next run will take it
-          modified() { curl -sSI "$(jq -r ".$1" input/sources.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
-          test "$(modified gtfs)" = "${{ steps.sources.outputs.gtfs }}" -a "$(modified idh)" = "${{ steps.sources.outputs.idh }}"
-          echo "version=$(unzip -p input/gtfs/sncf.zip feed_info.txt | tail -n +2 | cut -d, -f7)" >> "$GITHUB_OUTPUT"
+          modified() { curl -sSI "$(jq -r ".$1" data/config.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          test "$(modified gtfs_url)" = "${{ steps.sources.outputs.gtfs }}" -a "$(modified transfer_rules_url)" = "${{ steps.sources.outputs.idh }}"
+          echo "version=$(unzip -p download/sncf.zip feed_info.txt | tail -n +2 | cut -d, -f7)" >> "$GITHUB_OUTPUT"
 
       - name: Validate raw and patched feeds
         if: steps.sources.outputs.new == 'true'
         run: |
           gh release download -R MobilityData/gtfs-validator -p '*-cli.jar' -O validator.jar
           validate() { java --sun-misc-unsafe-memory-access=allow -Djava.util.logging.config.file=.github/validator-logging.properties -jar validator.jar -c FR -i "$1" -o "$2"; }
-          validate input/gtfs/sncf.zip validation/raw
+          validate download/sncf.zip validation/raw
           validate output/sncf_patched.zip validation/patched
           # the validator exits 0 even with errors, so count them in the report.
           # point_near_origin is the CITY_ stops at (0,0), which MOTIS requires
@@ -70,6 +70,6 @@ jobs:
         if: steps.sources.outputs.new == 'true'
         run: |
           gh release create "${{ steps.sources.outputs.tag }}" \
-            output/sncf_patched.zip output/sncf_patched_without_transfers.zip output/sncf_patched.lua validation/validation_raw.html validation/validation_patched.html \
+            output/sncf_patched.zip output/sncf_patched_without_transfers.zip data/sncf_display_name_fix.lua validation/validation_raw.html validation/validation_patched.html \
             --title "SNCF GTFS ${{ steps.patch.outputs.version }}" \
             --notes "Patched SNCF GTFS, feed_version ${{ steps.patch.outputs.version }}. GTFS published ${{ steps.sources.outputs.gtfs }}, IDH transfer rules published ${{ steps.sources.outputs.idh }}. MobilityData validation reports attached, raw and patched."
