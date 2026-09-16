@@ -14,7 +14,7 @@ Takes the SNCF GTFS-RT feeds published by the PAN, rewrites the trip ids they ca
 | `/trip-updates` | Patched [trip updates](https://proxy.transport.data.gouv.fr/resource/sncf-gtfs-rt-trip-updates), protobuf |
 | `/service-alerts` | Patched [service alerts](https://proxy.transport.data.gouv.fr/resource/sncf-gtfs-rt-service-alerts), protobuf |
 | `/` | JSON status: 200 when both feeds were refreshed in the last 5 minutes, 503 otherwise |
-| `/stats` | The status plus counters: refreshes and errors per feed with the last error, lookup size and load time, process uptime and memory, and the release trigger's last run, its result and its next firing as reported by systemd when the units are installed on the same host |
+| `/stats` | The status plus counters: refreshes and errors per feed with the last error, lookup size and load time, process uptime and memory, and the release trigger's last run, time, tag and outcome, when it runs on the same host |
 
 A feed answers 503 until its first fetch. When the PAN fails, the previous feed stays served.
 
@@ -50,7 +50,7 @@ Not handled yet: added trips reference stations (`StopArea:OCE87476606`) where s
 
 ## Release trigger
 
-Every 5 minutes, the script reads the `Last-Modified` of the GTFS and of the IDH transfer rules, builds the tag the workflow would use (`2026-09-15T18-36-43Z_2026-09-16T12-37-39Z`), and when no release has that tag, dispatches the workflow on `master`. The workflow keeps its own check as its first step. A tag is dispatched at most once an hour, so a run that fails does not start a new run every 5 minutes, and a transient failure is retried.
+Every 5 minutes, the script reads the `Last-Modified` of the GTFS and of the IDH transfer rules, builds the tag the workflow would use (`2026-09-15T18-36-43Z_2026-09-16T12-37-39Z`), and when no release has that tag, dispatches the workflow on `master`. The workflow keeps its own check as its first step. A tag is dispatched at most once an hour, so a run that fails does not start a new run every 5 minutes, and a transient failure is retried. Every run ends by writing its outcome, `release-exists`, `dispatched`, `dispatched-recently` or `error` with a detail, to `last-run.json` in its state directory, which the bridge shows on `/stats`.
 
 Needs `curl`, `jq`, and `GITHUB_TOKEN`: a fine-grained personal access token restricted to the repository with the permission *Actions: read and write*. Without it the script still computes the tag and checks the release, and fails at the dispatch.
 
@@ -69,10 +69,11 @@ Systemd units are provided for a Linux host with Node 20 or later, with the repo
 cd /opt/sncf-gtfs-toolkit/scripts && npm ci
 sudo cp sncf-gtfs-rt-bridge.service sncf-release-trigger.service sncf-release-trigger.timer /etc/systemd/system/
 sudo install -m 600 /dev/null /etc/sncf-release-trigger.env && sudoedit /etc/sncf-release-trigger.env   # GITHUB_TOKEN=github_pat_…
+sudo useradd -r -s /usr/sbin/nologin sncf-release-trigger
 sudo systemctl enable --now sncf-gtfs-rt-bridge sncf-release-trigger.timer
 ```
 
-The bridge unit listens on port 80 as an unprivileged transient user through `AmbientCapabilities`. Behind a reverse proxy, set `PORT` in the unit and drop that line. The timer runs the trigger every 5 minutes.
+The bridge unit listens on port 80 as an unprivileged transient user through `AmbientCapabilities`. Behind a reverse proxy, set `PORT` in the unit and drop that line. The timer runs the trigger every 5 minutes as the `sncf-release-trigger` user, whose state directory `/var/lib/sncf-release-trigger` is readable by the bridge.
 
 ### Operating
 
@@ -83,7 +84,7 @@ sudo journalctl -u sncf-release-trigger --no-pager --since today            # on
 sudo journalctl -u sncf-gtfs-rt-bridge --no-pager --since today             # GTFS reloads and fetch errors of the bridge
 sudo journalctl -u sncf-gtfs-rt-bridge -u sncf-release-trigger -f           # follow both live
 sudo systemctl start sncf-release-trigger                                   # run the trigger now instead of waiting for the timer
-sudo cat /var/lib/private/sncf-release-trigger/last-dispatched-tag          # the last tag it dispatched, if any
+cat /var/lib/sncf-release-trigger/last-run.json                             # last run of the trigger: time, tag, outcome
 curl -s localhost/                                                          # bridge status, 200 when both feeds are fresh
 curl -s localhost/stats                                                     # counters, and the trigger's last run and next firing
 ```

@@ -3,8 +3,6 @@
 // GTFS and rebuild the lookup when it changed.
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
 import gtfsRealtime from 'gtfs-realtime-bindings';
 import { lookupFromZip, patchTripUpdates, patchAlerts } from './patch.mjs';
 
@@ -16,6 +14,7 @@ const FEEDS = {
 };
 const PORT = Number(process.env.PORT ?? 8080);
 const FEED_INTERVAL = 30_000, GTFS_INTERVAL = 5 * 60_000, STALE_AFTER = 5 * 60_000;
+const TRIGGER_LAST_RUN = '/var/lib/sncf-release-trigger/last-run.json'; // written by release-trigger.sh at the end of each run
 
 let lookup, gtfsModified, gtfsLoadedAt;
 const served = new Map(); // feed name -> { body, at, timestamp, entities }
@@ -70,35 +69,24 @@ function status() {
   return { fresh, gtfsModified, feeds };
 }
 
-// What systemd knows about a unit, undefined when there is no systemd or no such unit.
-async function unit(name, properties) {
-  try {
-    const { stdout } = await promisify(execFile)('systemctl', ['show', name, '-p', 'LoadState,' + properties.join(',')], { timeout: 3000 });
-    const values = Object.fromEntries(stdout.trim().split('\n').map(line => line.split(/=(.*)/s).slice(0, 2)));
-    return values.LoadState === 'not-found' ? undefined : Object.fromEntries(properties.map(p => [p, values[p] || undefined]));
-  } catch { return undefined; }
-}
+const readJson = path => { try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return undefined; } };
 
-async function stats() {
-  const [service, timer] = await Promise.all([
-    unit('sncf-release-trigger.service', ['ExecMainStartTimestamp', 'ExecMainExitTimestamp', 'Result', 'ExecMainStatus']),
-    unit('sncf-release-trigger.timer', ['LastTriggerUSec', 'NextElapseUSecRealtime']),
-  ]);
+function stats() {
   return {
-    ...status(),
+    fresh: status().fresh,
     bridge: { startedAt, uptimeSeconds: Math.round(process.uptime()), rssMB: Math.round(process.memoryUsage().rss / 1e6), node: process.version },
     gtfs: lookup && { modified: gtfsModified, loadedAt: gtfsLoadedAt, trips: lookup.trips.size, trainNumbers: lookup.byShort.size },
     feeds: Object.fromEntries(Object.keys(FEEDS).map(name => [name, { ...feedInfo(name), ...counters[name] }])),
-    releaseTrigger: service || timer ? { lastRun: service?.ExecMainStartTimestamp, lastExit: service?.ExecMainExitTimestamp, result: service?.Result, exitStatus: service?.ExecMainStatus, lastTrigger: timer?.LastTriggerUSec, nextTrigger: timer?.NextElapseUSecRealtime } : undefined,
+    releaseTrigger: readJson(TRIGGER_LAST_RUN), // absent when the trigger does not run on this host
   };
 }
 
 const json = (res, code, body) => res.writeHead(code, { 'content-type': 'application/json' }).end(JSON.stringify(body, null, 1));
 
-createServer(async (req, res) => {
+createServer((req, res) => {
   const name = req.url.slice(1).split('?')[0];
   if (name === '') { const s = status(); return json(res, s.fresh ? 200 : 503, s); }
-  if (name === 'stats') return json(res, 200, await stats());
+  if (name === 'stats') return json(res, 200, stats());
   const f = served.get(name);
   if (!f) return res.writeHead(name in FEEDS ? 503 : 404).end();
   res.writeHead(200, { 'content-type': 'application/x-protobuf', 'content-length': f.body.length, 'last-modified': f.at.toUTCString(), 'cache-control': 'no-cache' }).end(f.body);

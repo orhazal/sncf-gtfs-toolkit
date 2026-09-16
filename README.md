@@ -231,7 +231,13 @@ A run that fails, because SNCF changed the feed's shape or the validator found e
 
 ## GTFS-RT bridge
 
-[`scripts/`](scripts/README.md) holds two companion programs. The bridge is a small Node service. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds.
+[`scripts/`](scripts/README.md) holds two companion programs. The bridge is a small Node service. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds, refreshed every 30 seconds:
+
+```
+http://vps-b11dbea5.vps.ovh.net/trip-updates
+http://vps-b11dbea5.vps.ovh.net/service-alerts
+```
+
 The release trigger is the shell script next to it that launches the release workflow above.
 
 ## License

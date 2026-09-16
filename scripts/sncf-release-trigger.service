@@ -5,7 +5,11 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-DynamicUser=yes
+User=sncf-release-trigger
 StateDirectory=sncf-release-trigger
 EnvironmentFile=/etc/sncf-release-trigger.env
 ExecStart=/opt/sncf-gtfs-toolkit/scripts/release-trigger.sh
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+NoNewPrivileges=yes
