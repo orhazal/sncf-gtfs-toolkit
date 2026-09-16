@@ -1,0 +1,32 @@
+# Started by an external cron (workflow_dispatch): HEAD the SNCF GTFS and the IDH transfer rules, and start the release
+# workflow with the pair of Last-Modified dates when no release carries it yet.
+name: Check the SNCF sources
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+env:
+  GH_TOKEN: ${{ github.token }}
+  GTFS_URL: https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip
+  IDH_URL: https://eu.ftp.opendatasoft.com/sncf/prr/temps_correspondance/INFOTRAINS_Export_IDH.zip
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Compare the sources' Last-Modified with the releases
+        run: |
+          modified() { curl -sSI "$1" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
+          gtfs=$(modified "$GTFS_URL"); idh=$(modified "$IDH_URL")
+          test -n "$gtfs" -a -n "$idh"
+          tag="$(date -u -d "$gtfs" +%Y-%m-%dT%H-%M-%SZ)_$(date -u -d "$idh" +%Y-%m-%dT%H-%M-%SZ)"
+          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "GTFS of $gtfs with IDH of $idh already released as $tag"
+            exit 0
+          fi
+          gh workflow run release.yml -R "$GITHUB_REPOSITORY" --ref "$GITHUB_REF_NAME" -f gtfs_last_modified="$gtfs" -f idh_last_modified="$idh"
+          echo "release workflow started for $tag"

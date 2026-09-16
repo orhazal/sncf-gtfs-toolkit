@@ -18,7 +18,7 @@ The result is the original feed, unchanged except for those five files plus the 
 | `unusual_uic.csv` | `data/` | Matching stations between the two datasets |
 | `stations_to_localities.csv` | `data/`, derived from the [Trainline stations database](https://github.com/trainline-eu/stations) | Localities |
 
-Both archives are downloaded on every run into `download/`, from the URLs in `data/config.json`, which the release workflow and the release trigger read too.
+Both archives are downloaded on every run into `download/`, each with the `Last-Modified` the server sent in a `.version` file next to it.
 
 ## How the two datasets are matched
 
@@ -216,14 +216,14 @@ Downloads go to `download/`, results to `output/`: the two zips, with the five p
 
 ## Releases
 
-A GitHub Actions workflow ([`.github/workflows/release.yml`](.github/workflows/release.yml)) publishes the patched feed as a [release](https://github.com/orhazal/sncf-gtfs-toolkit/releases) whenever SNCF publishes new data. The latest one is always at:
+Two GitHub Actions workflows publish the patched feed as a [release](https://github.com/orhazal/sncf-gtfs-toolkit/releases) whenever SNCF publishes new data: [`check.yml`](.github/workflows/check.yml) watches the sources, [`release.yml`](.github/workflows/release.yml) builds and publishes. The latest release is always at:
 
 ```
 https://github.com/orhazal/sncf-gtfs-toolkit/releases/latest/download/sncf_patched.zip
 ```
 
-1. Every 5 minutes, the [release trigger](scripts/README.md) script reads the `Last-Modified` dates of the GTFS export and of the IDH transfer rules with a `HEAD` request, and calls the workflow's `workflow_dispatch` endpoint when the pair has no release yet. GitHub's own schedule fires late or not at all, and the workflow reads both dates again as its first step. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else runs. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
-2. The app runs with `--no-txt`, then both dates are read again: if either file changed during the run, the run stops and the next one takes the newer files.
+1. An external cron calls the `workflow_dispatch` endpoint of `check.yml` every few minutes, since GitHub's own schedule fires late or not at all. The check reads the `Last-Modified` dates of the GTFS export and of the IDH transfer rules with a `HEAD` request. The pair of dates is the release tag (`2026-09-15T18-36-43Z_2026-09-15T17-48-13Z`). If that release exists, nothing else happens. Otherwise it starts `release.yml` with the two dates. Neither the PAN nor the SNCF portal notifies of a new version, they poll the same files.
+2. `release.yml` runs the app with `--no-txt`, then compares the `Last-Modified` of the two downloaded files with the dates the check saw: if SNCF published in between, the run stops and the next check takes the newer files.
 3. Both the raw feed and `sncf_patched.zip` go through the [MobilityData GTFS validator](https://github.com/MobilityData/gtfs-validator). Any error in the raw feed, or any error other than `point_near_origin` in the patched one (the `CITY_` stops at 0,0 of use case 4), stops the run without a release.
 4. The release carries `sncf_patched.zip`, `sncf_patched_without_transfers.zip`, `sncf_display_name_fix.lua` and the two validation reports.
 
@@ -231,14 +231,13 @@ A run that fails, because SNCF changed the feed's shape or the validator found e
 
 ## GTFS-RT bridge
 
-[`scripts/`](scripts/README.md) holds two companion programs. The bridge is a small Node service. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds, refreshed every 30 seconds:
+[`scripts/`](scripts/README.md) holds the bridge, a small Node service. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds, refreshed every 30 seconds:
 
 ```
 http://vps-b11dbea5.vps.ovh.net/trip-updates
 http://vps-b11dbea5.vps.ovh.net/service-alerts
 ```
 
-The release trigger is the shell script next to it that launches the release workflow above.
 
 ## License
 

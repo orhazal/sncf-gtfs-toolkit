@@ -1,13 +1,25 @@
-# Started every 15 minutes by a cron-job.org job (workflow_dispatch): HEAD the SNCF GTFS and the IDH transfer rules. When the pair of Last-Modified dates has no release yet,
-# download and patch, validate raw and patched with the MobilityData validator, and publish a GitHub release
-# tagged with both dates.
+# Started by the check workflow with the Last-Modified dates it found unreleased: download and patch, validate raw and
+# patched with the MobilityData validator, and publish a GitHub release tagged with both dates. To run it by hand, run
+# the check workflow, which reads the dates and starts this one.
 name: Release patched GTFS
 
 on:
   workflow_dispatch:
+    inputs:
+      gtfs_last_modified:
+        description: Last-Modified of the SNCF GTFS export, as served
+        required: true
+      idh_last_modified:
+        description: Last-Modified of the IDH transfer rules export, as served
+        required: true
 
 permissions:
   contents: write
+
+# one release run at a time: a second dispatch waits for the first
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 env:
   GH_TOKEN: ${{ github.token }}
@@ -18,40 +30,22 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Check the sources' Last-Modified against the releases
-        id: sources
-        run: |
-          modified() { curl -sSI "$(jq -r ".$1" data/config.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
-          gtfs=$(modified gtfs_url); idh=$(modified transfer_rules_url)
-          test -n "$gtfs" -a -n "$idh"
-          tag="$(date -u -d "$gtfs" +%Y-%m-%dT%H-%M-%SZ)_$(date -u -d "$idh" +%Y-%m-%dT%H-%M-%SZ)"
-          echo "gtfs=$gtfs" >> "$GITHUB_OUTPUT"
-          echo "idh=$idh" >> "$GITHUB_OUTPUT"
-          echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          if gh release view "$tag" -R "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
-            echo "GTFS of $gtfs with IDH of $idh already released as $tag"
-          else
-            echo "new=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - uses: actions/setup-java@v5
-        if: steps.sources.outputs.new == 'true'
         with:
           distribution: temurin
           java-version: 25
 
       - name: Download and patch
         id: patch
-        if: steps.sources.outputs.new == 'true'
         run: |
           ./gradlew run -q --args="--no-txt"
-          # the app downloads both files itself: make sure neither was published again meanwhile, the next run will take it
-          modified() { curl -sSI "$(jq -r ".$1" data/config.json)" | tr -d '\r' | awk -F': ' 'tolower($1) == "last-modified" {print $2}'; }
-          test "$(modified gtfs_url)" = "${{ steps.sources.outputs.gtfs }}" -a "$(modified transfer_rules_url)" = "${{ steps.sources.outputs.idh }}"
+          # the app downloads both files itself and writes the Last-Modified of each in a .version file next to it: make sure they are the versions the check saw
+          test "$(cat download/sncf.zip.version)" = "${{ inputs.gtfs_last_modified }}" -a "$(cat download/sncf_transfer_rules.zip.version)" = "${{ inputs.idh_last_modified }}"
+          echo "tag=$(date -u -d "${{ inputs.gtfs_last_modified }}" +%Y-%m-%dT%H-%M-%SZ)_$(date -u -d "${{ inputs.idh_last_modified }}" +%Y-%m-%dT%H-%M-%SZ)" >> "$GITHUB_OUTPUT"
           echo "version=$(unzip -p download/sncf.zip feed_info.txt | tail -n +2 | cut -d, -f7)" >> "$GITHUB_OUTPUT"
 
       - name: Validate raw and patched feeds
-        if: steps.sources.outputs.new == 'true'
+        id: validate
         run: |
           gh release download -R MobilityData/gtfs-validator -p '*-cli.jar' -O validator.jar
           validate() { java --sun-misc-unsafe-memory-access=allow -Djava.util.logging.config.file=.github/validator-logging.properties -jar validator.jar -c FR -i "$1" -o "$2"; }
@@ -67,9 +61,9 @@ jobs:
           mv validation/patched/report.html validation/validation_patched.html
 
       - name: Release
-        if: steps.sources.outputs.new == 'true'
+        id: release
         run: |
-          gh release create "${{ steps.sources.outputs.tag }}" \
+          gh release create "${{ steps.patch.outputs.tag }}" \
             output/sncf_patched.zip output/sncf_patched_without_transfers.zip data/sncf_display_name_fix.lua validation/validation_raw.html validation/validation_patched.html \
             --title "SNCF GTFS ${{ steps.patch.outputs.version }}" \
-            --notes "Patched SNCF GTFS, feed_version ${{ steps.patch.outputs.version }}. GTFS published ${{ steps.sources.outputs.gtfs }}, IDH transfer rules published ${{ steps.sources.outputs.idh }}. MobilityData validation reports attached, raw and patched."
+            --notes "Patched SNCF GTFS, feed_version ${{ steps.patch.outputs.version }}. GTFS published ${{ inputs.gtfs_last_modified }}, IDH transfer rules published ${{ inputs.idh_last_modified }}. MobilityData validation reports attached, raw and patched."

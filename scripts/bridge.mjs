@@ -2,19 +2,17 @@
 // into the ids of the SNCF GTFS, keep the result in memory and serve it over HTTP. Every 5 min: revalidate the SNCF
 // GTFS and rebuild the lookup when it changed.
 import { createServer } from 'node:http';
-import { readFileSync } from 'node:fs';
 import gtfsRealtime from 'gtfs-realtime-bindings';
 import { lookupFromZip, patchTripUpdates, patchAlerts } from './patch.mjs';
 
 const { FeedMessage } = gtfsRealtime.transit_realtime;
-const config = JSON.parse(readFileSync(new URL('../data/config.json', import.meta.url), 'utf8'));
+const GTFS_URL = 'https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip';
 const FEEDS = {
   'trip-updates': { url: 'https://proxy.transport.data.gouv.fr/resource/sncf-gtfs-rt-trip-updates', patch: patchTripUpdates },
   'service-alerts': { url: 'https://proxy.transport.data.gouv.fr/resource/sncf-gtfs-rt-service-alerts', patch: patchAlerts },
 };
 const PORT = Number(process.env.PORT ?? 8080);
 const FEED_INTERVAL = 30_000, GTFS_INTERVAL = 5 * 60_000, STALE_AFTER = 5 * 60_000;
-const TRIGGER_LAST_RUN = '/var/lib/sncf-release-trigger/last-run.json'; // written by release-trigger.sh at the end of each run
 
 let lookup, gtfsModified, gtfsLoadedAt;
 const served = new Map(); // feed name -> { body, at, timestamp, entities }
@@ -34,9 +32,9 @@ async function lastModified(url) {
 }
 
 async function refreshLookup() {
-  const gtfs = await lastModified(config.gtfs_url);
+  const gtfs = await lastModified(GTFS_URL);
   if (gtfs === gtfsModified) return;
-  lookup = lookupFromZip(new Uint8Array(await (await get(config.gtfs_url)).arrayBuffer()));
+  lookup = lookupFromZip(new Uint8Array(await (await get(GTFS_URL)).arrayBuffer()));
   gtfsModified = gtfs;
   gtfsLoadedAt = new Date();
   console.log(`GTFS of ${gtfs}: ${lookup.trips.size} trips, ${lookup.byShort.size} train numbers`);
@@ -69,15 +67,12 @@ function status() {
   return { fresh, gtfsModified, feeds };
 }
 
-const readJson = path => { try { return JSON.parse(readFileSync(path, 'utf8')); } catch { return undefined; } };
-
 function stats() {
   return {
     fresh: status().fresh,
     bridge: { startedAt, uptimeSeconds: Math.round(process.uptime()), rssMB: Math.round(process.memoryUsage().rss / 1e6), node: process.version },
     gtfs: lookup && { modified: gtfsModified, loadedAt: gtfsLoadedAt, trips: lookup.trips.size, trainNumbers: lookup.byShort.size },
     feeds: Object.fromEntries(Object.keys(FEEDS).map(name => [name, { ...feedInfo(name), ...counters[name] }])),
-    releaseTrigger: readJson(TRIGGER_LAST_RUN), // absent when the trigger does not run on this host
   };
 }
 

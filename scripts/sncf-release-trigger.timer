@@ -1,9 +1,0 @@
-[Unit]
-Description=Dispatch the SNCF GTFS release workflow when the sources changed, every 5 minutes
-
-[Timer]
-OnCalendar=*:0/5
-OnBootSec=1min
-
-[Install]
-WantedBy=timers.target

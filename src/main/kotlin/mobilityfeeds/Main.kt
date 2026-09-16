@@ -27,15 +27,15 @@ private val routesFile = File(txtPath, "routes.txt")
 private val tripsFile = File(txtPath, "trips.txt")
 private val stopsFile = File(txtPath, "stops.txt")
 private val stopGroupElementsFile = File(txtPath, "stop_group_elements.txt")
-// ponytail: flat string map read with a regex, a JSON library if the file grows beyond that
-private val sources = Regex("\"(\\w+)\": *\"([^\"]+)\"").findAll(File("data/config.json").readText()).associate { it.groupValues[1] to it.groupValues[2] }
+private const val GTFS_URL = "https://eu.ftp.opendatasoft.com/sncf/plandata/Export_OpenData_SNCF_GTFS_NewTripId.zip"
+private const val TRANSFER_RULES_URL = "https://eu.ftp.opendatasoft.com/sncf/prr/temps_correspondance/INFOTRAINS_Export_IDH.zip"
 
 private val patchedGtfsFile = File(outputPath, "sncf_patched.zip")
 private val patchedGtfsWithoutTransfersFile = File(outputPath, "sncf_patched_without_transfers.zip")
 
 fun main(args: Array<String>) {
-    val gtfsZip = download(name = "sncf", url = sources.getValue("gtfs_url"))
-    val sncfRulesZip = download(name = "sncf_transfer_rules", url = sources.getValue("transfer_rules_url"))
+    val gtfsZip = download(name = "sncf", url = GTFS_URL)
+    val sncfRulesZip = download(name = "sncf_transfer_rules", url = TRANSFER_RULES_URL)
 
     val gtfsStore = getGtfsStore(gtfsZip)
     val indexes = buildIndexes(gtfsStore, getUicReferential())
@@ -101,5 +101,7 @@ fun download(name: String, url: String): File {
     check(response.statusCode() in 200..299) {
         "Download failed ($url): HTTP ${response.statusCode()}"
     }
+    // the version of what was actually written, for the release workflow to compare with what it was asked to release
+    File("${local.path}.version").writeText(response.headers().firstValue("Last-Modified").orElse(""))
     return local
 }
