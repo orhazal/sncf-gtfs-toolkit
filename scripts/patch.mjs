@@ -1,8 +1,9 @@
 // The pure part of the bridge: build the lookup from the SNCF GTFS, rewrite the two feeds.
 import { unzipSync, strFromU8 } from 'fflate';
 
-// RT internal trip id: OCESN, train number, F (ferré) or R (route). It is the prefix of the static ids of that train.
-const SHORT_ID = /^OCESN\d+[FR]/;
+// RT internal trip id: OCE, two letters for the network (SN, SA, EA, LO), the train number, F (ferré) or R (route).
+// It is the prefix of the static ids of that train.
+const SHORT_ID = /^OCE[A-Z]{2}\d+[FR]/;
 const ADDED = 1, CANCELED = 3;
 
 // { 'trips.txt': text, 'calendar_dates.txt': text } -> lookup
@@ -56,14 +57,24 @@ export function patchTripUpdates(entities, lk) {
   return out;
 }
 
-// today: the service day consumers resolve a trip against when the descriptor has no start_date. nigiri takes the
-// UTC date of the feed header's timestamp, so the bridge passes it and only emits the trips running that day.
-export function patchAlerts(entities, lk, today) {
+// The days an alert can affect: its impact periods, or the active ones it falls back to, as YYYYMMDD ranges. The
+// dates are those of the UTC day the period starts and ends on, close enough to a service day to sort trips by.
+const ymd = t => new Date(t * 1000).toISOString().slice(0, 10).replace(/-/g, '');
+const periodsOf = a => (a.impactPeriod?.length ? a.impactPeriod : a.activePeriod ?? [])
+  .map(p => [p.start ? ymd(Number(p.start)) : '00000000', p.end ? ymd(Number(p.end)) : '99999999']);
+
+const runsDuring = (lk, tripId, ranges) => !ranges.length ||
+  [...lk.dates.get(lk.trips.get(tripId).serviceId) ?? []].some(d => ranges.some(([from, to]) => d >= from && d <= to));
+
+// An informed entity names a train, not a run: an internal id becomes every static trip of that train number, minus
+// the trips that never run while the alert is in effect. What bounds the alert in time is its own period.
+export function patchAlerts(entities, lk) {
   const out = [];
   for (const e of entities) {
     if (!e.alert) { out.push(e); continue; }
+    const ranges = periodsOf(e.alert);
     const informed = e.alert.informedEntity.flatMap(ie => ie.trip?.tripId
-      ? resolve(lk, { tripId: ie.trip.tripId, startDate: ie.trip.startDate || today }).map(tripId => ({ ...ie, trip: { ...ie.trip, tripId } }))
+      ? resolve(lk, ie.trip).filter(id => runsDuring(lk, id, ranges)).map(tripId => ({ ...ie, trip: { ...ie.trip, tripId } }))
       : [ie]);
     if (informed.length) { e.alert.informedEntity = informed; out.push(e); }
   }

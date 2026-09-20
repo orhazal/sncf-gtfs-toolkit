@@ -47,8 +47,7 @@ async function refreshFeeds() {
     try {
       const message = FeedMessage.decode(new Uint8Array(await (await get(feed.url)).arrayBuffer()));
       const before = message.entity.length;
-      const today = new Date(Number(message.header.timestamp) * 1000).toISOString().slice(0, 10).replace(/-/g, '');
-      message.entity = feed.patch(message.entity, lookup, today);
+      message.entity = feed.patch(message.entity, lookup);
       served.set(name, { body: FeedMessage.encode(message).finish(), at: new Date(), timestamp: Number(message.header.timestamp), entities: `${before} -> ${message.entity.length}` });
       counters[name].refreshes++;
     } catch (e) {
