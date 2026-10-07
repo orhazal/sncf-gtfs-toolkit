@@ -4,4 +4,3 @@ build/
 .idea/
 tmp/
 download/
-scripts/node_modules/

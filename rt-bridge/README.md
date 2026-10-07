@@ -1,6 +1,6 @@
 # GTFS-RT bridge
 
-Takes the SNCF GTFS-RT feeds published by the PAN, rewrites the trip ids they carry into the ids of the SNCF GTFS, and serves the result. One Node process, no database, no files: the two patched feeds live in memory and are swapped whole every 30 seconds, so a consumer always gets a complete feed.
+Takes the SNCF GTFS-RT feeds published by the PAN, rewrites the trip ids they carry into the ids of the SNCF GTFS, and serves the result. One JVM process, no database, no files: the two patched feeds live in memory and are swapped whole every 30 seconds, so a consumer always gets a complete feed.
 
 | Endpoint | Content |
 |---|---|
@@ -15,7 +15,7 @@ A feed answers 503 until its first fetch. When the PAN fails, the previous feed 
 
 A static trip id looks like `OCESN865039F1187_F:TER:FR:Line::394b…::87775007:87775817:5:1315:20261211`. Most trip updates carry exactly that. Added trip updates, some canceled ones and every trip in service alerts carry the internal id instead: `OCESN865039F`, that is `OCE`, two letters for the network, the train number, and `F` (ferré) or `R` (route). Four networks appear in the current feed, `SN` with 36,168 static trips, `SA` with 1,181, `EA` with 388 and `LO` with 153. The internal id is the prefix of the static ids of that train, one per period the train runs.
 
-The lookup is built from `trips.txt` and `calendar_dates.txt` of the raw SNCF GTFS, downloaded from opendatasoft. Its `Last-Modified` is checked every 5 minutes and the 4 MB zip is downloaded again when it changed.
+The lookup is built from `trips.txt` and `calendar_dates.txt` of the raw SNCF GTFS, downloaded from opendatasoft. It is requested again every 5 minutes with `If-Modified-Since`, so the zip only comes back, and the lookup is only rebuilt, when SNCF published a new one.
 
 | Entity | Rule |
 |---|---|
@@ -67,33 +67,41 @@ Every alert in that feed carries exactly one range, and none of them uses `impac
 
 ## Running
 
+Kotlin, in the `rt-bridge` Gradle subproject. From the repository root:
+
 ```bash
-cd scripts && npm ci && npm test && npm start        # then http://localhost:8080/
+./gradlew :rt-bridge:test :rt-bridge:run        # then http://localhost:8080/
 ```
 
 `PORT` changes the port.
 
-A systemd unit is provided for a Linux host with Node 20 or later, with the repository cloned in `/opt/sncf-gtfs-toolkit`:
+It ships as a Docker image. [`rt-bridge.yml`](../.github/workflows/rt-bridge.yml) builds it on every push to `master` that touches the bridge or the build, tests included, and pushes it to `ghcr.io/orhazal/sncf-gtfs-toolkit/rt-bridge`, tagged `latest` and with the commit sha. To build it locally, from the repository root:
 
 ```bash
-cd /opt/sncf-gtfs-toolkit/scripts && npm ci
-sudo cp sncf-gtfs-rt-bridge.service /etc/systemd/system/ && sudo systemctl enable --now sncf-gtfs-rt-bridge
+docker build -f rt-bridge/Dockerfile -t rt-bridge .
 ```
 
-The unit listens on port 80 as an unprivileged transient user through `AmbientCapabilities`. Behind a reverse proxy, set `PORT` in the unit and drop that line.
+On the host, listening on port 80:
+
+```bash
+docker run -d --name rt-bridge --restart unless-stopped -p 80:8080 ghcr.io/orhazal/sncf-gtfs-toolkit/rt-bridge
+```
+
+If `docker pull` asks for credentials, the package is still private: make it public once in its package settings on GitHub.
 
 ## Operating
 
 ```bash
-sudo systemctl status sncf-gtfs-rt-bridge                                   # running since when
-sudo journalctl -u sncf-gtfs-rt-bridge --no-pager --since today             # GTFS reloads and fetch errors
-sudo journalctl -u sncf-gtfs-rt-bridge -f                                   # follow live
-curl -s localhost/                                                          # status, 200 when both feeds are fresh
-curl -s localhost/stats                                                     # counters
+docker ps --filter name=rt-bridge                     # running since when
+docker logs -t --since 24h rt-bridge                  # GTFS reloads and fetch errors
+docker logs -t -f rt-bridge                           # follow live
+curl -s localhost/                                    # status, 200 when both feeds are fresh
+curl -s localhost/stats                               # counters
 ```
 
-Update after a `git pull`:
+Update to the latest image:
 
 ```bash
-cd /opt/sncf-gtfs-toolkit && git pull && (cd scripts && npm ci) && sudo systemctl restart sncf-gtfs-rt-bridge
+docker pull ghcr.io/orhazal/sncf-gtfs-toolkit/rt-bridge && docker rm -f rt-bridge
+docker run -d --name rt-bridge --restart unless-stopped -p 80:8080 ghcr.io/orhazal/sncf-gtfs-toolkit/rt-bridge
 ```

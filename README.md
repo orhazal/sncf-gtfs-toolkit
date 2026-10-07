@@ -209,7 +209,7 @@ In the 2026-09-14 feed, 151 localities and 379 elements are written.
 Requires a JDK 25 toolchain (Gradle downloads it if missing) and network access.
 
 ```bash
-./gradlew run
+./gradlew :static-patcher:run
 ```
 
 Downloads go to `download/`, results to `output/`: the two zips, with the five patched files and `stop_group_elements.txt` in `output/txt/`, unless run with `--args="--no-txt"`, which deletes them once the zips are written. The MOTIS script of use case 3 is not generated, it lives in `data/`.
@@ -231,7 +231,7 @@ A run that fails, because SNCF changed the feed's shape or the validator found e
 
 ## GTFS-RT bridge
 
-[`scripts/`](scripts/README.md) holds the bridge, a small Node service. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds, refreshed every 30 seconds:
+[`rt-bridge/`](rt-bridge/README.md) holds the bridge, a small Kotlin service shipped as a Docker image. It rewrites the trip ids of the SNCF GTFS-RT trip updates and service alerts into the ids of the GTFS and serves the two patched feeds, refreshed every 30 seconds:
 
 ```
 http://vps-b11dbea5.vps.ovh.net/trip-updates

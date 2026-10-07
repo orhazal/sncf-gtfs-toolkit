@@ -1,0 +1,9 @@
+# Only what the Gradle build of rt-bridge reads. static-patcher/build.gradle.kts because settings includes the project.
+*
+!gradlew
+!gradle/wrapper
+!settings.gradle.kts
+!build.gradle.kts
+!static-patcher/build.gradle.kts
+!rt-bridge/build.gradle.kts
+!rt-bridge/src
