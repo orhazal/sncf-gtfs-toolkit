@@ -1,4 +1,4 @@
-package mobilityfeeds.gtfs
+package transitdatalab.gtfs
 
 import org.apache.commons.csv.CSVFormat
 import org.onebusaway.gtfs.impl.GtfsDaoImpl

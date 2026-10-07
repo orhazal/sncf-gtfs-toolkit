@@ -1,15 +1,15 @@
-package mobilityfeeds.patch
+package transitdatalab.patch
 
 import org.apache.commons.csv.CSVPrinter
 import org.slf4j.LoggerFactory
-import mobilityfeeds.gtfs.lfCsv
-import mobilityfeeds.sncf.GtfsIndexes
-import mobilityfeeds.sncf.Mode
-import mobilityfeeds.sncf.SncfBrand
-import mobilityfeeds.sncf.StationConnection
-import mobilityfeeds.sncf.TrainConnection
-import mobilityfeeds.sncf.loadSncfTransferRules
-import mobilityfeeds.sncf.serviceIdAfter
+import transitdatalab.gtfs.lfCsv
+import transitdatalab.sncf.GtfsIndexes
+import transitdatalab.sncf.Mode
+import transitdatalab.sncf.SncfBrand
+import transitdatalab.sncf.StationConnection
+import transitdatalab.sncf.TrainConnection
+import transitdatalab.sncf.loadSncfTransferRules
+import transitdatalab.sncf.serviceIdAfter
 import java.io.File
 import java.time.LocalDate
 

@@ -11,7 +11,7 @@ dependencies {
 }
 
 application {
-    mainClass = "mobilityfeeds.rtbridge.MainKt"
+    mainClass = "transitdatalab.rtbridge.MainKt"
 }
 
 tasks.test {

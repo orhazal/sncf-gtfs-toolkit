@@ -1,4 +1,4 @@
-package mobilityfeeds.rtbridge
+package transitdatalab.rtbridge
 
 import com.google.transit.realtime.GtfsRealtime.Alert
 import com.google.transit.realtime.GtfsRealtime.EntitySelector

@@ -1,7 +1,7 @@
-package mobilityfeeds.patch
+package transitdatalab.patch
 
-import mobilityfeeds.gtfs.lfCsv
-import mobilityfeeds.sncf.SncfBrand
+import transitdatalab.gtfs.lfCsv
+import transitdatalab.sncf.SncfBrand
 import org.apache.commons.csv.CSVPrinter
 import org.onebusaway.gtfs.model.Route
 import org.onebusaway.gtfs.model.Stop

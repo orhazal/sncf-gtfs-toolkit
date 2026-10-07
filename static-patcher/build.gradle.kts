@@ -10,7 +10,7 @@ dependencies {
 }
 
 application {
-    mainClass = "mobilityfeeds.MainKt"
+    mainClass = "transitdatalab.MainKt"
 }
 
 tasks.named<JavaExec>("run") {

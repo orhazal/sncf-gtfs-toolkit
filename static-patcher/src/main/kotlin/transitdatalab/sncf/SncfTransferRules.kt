@@ -1,4 +1,4 @@
-package mobilityfeeds.sncf
+package transitdatalab.sncf
 
 import org.apache.commons.csv.CSVFormat
 import org.slf4j.LoggerFactory

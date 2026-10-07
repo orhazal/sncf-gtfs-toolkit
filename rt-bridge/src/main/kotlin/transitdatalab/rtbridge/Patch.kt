@@ -1,5 +1,5 @@
 // The pure part of the bridge: build the lookup from the SNCF GTFS, rewrite the two feeds.
-package mobilityfeeds.rtbridge
+package transitdatalab.rtbridge
 
 import com.google.transit.realtime.GtfsRealtime.Alert
 import com.google.transit.realtime.GtfsRealtime.FeedEntity

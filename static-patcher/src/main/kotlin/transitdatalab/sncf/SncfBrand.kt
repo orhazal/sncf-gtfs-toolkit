@@ -1,4 +1,4 @@
-package mobilityfeeds.sncf
+package transitdatalab.sncf
 
 // Brand as found in SNCF stop point ids (StopPoint:OCE<brand>-<uic8>), with the GTFS extended route type (Google / TPEG) it maps to
 enum class SncfBrand(val extendedRouteType: Int, val stopIdBrand: String) {

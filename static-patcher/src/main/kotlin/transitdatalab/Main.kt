@@ -1,15 +1,15 @@
-package mobilityfeeds
+package transitdatalab
 
 import org.slf4j.LoggerFactory
-import mobilityfeeds.gtfs.getGtfsStore
-import mobilityfeeds.gtfs.writeGtfsWithReplacements
-import mobilityfeeds.patch.patchCalendarDates
-import mobilityfeeds.patch.patchRoutes
-import mobilityfeeds.patch.patchStops
-import mobilityfeeds.patch.patchTransfers
-import mobilityfeeds.patch.patchTrips
-import mobilityfeeds.sncf.buildIndexes
-import mobilityfeeds.sncf.getUicReferential
+import transitdatalab.gtfs.getGtfsStore
+import transitdatalab.gtfs.writeGtfsWithReplacements
+import transitdatalab.patch.patchCalendarDates
+import transitdatalab.patch.patchRoutes
+import transitdatalab.patch.patchStops
+import transitdatalab.patch.patchTransfers
+import transitdatalab.patch.patchTrips
+import transitdatalab.sncf.buildIndexes
+import transitdatalab.sncf.getUicReferential
 import java.io.File
 import java.net.URI
 import java.net.http.HttpClient

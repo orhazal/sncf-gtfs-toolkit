@@ -1,7 +1,7 @@
 // GTFS-RT bridge. Every 30 s: fetch the SNCF trip updates and service alerts from the PAN, rewrite their RT trip ids
 // into the ids of the SNCF GTFS, keep the result in memory and serve it over HTTP. Every 5 min: revalidate the SNCF
 // GTFS and rebuild the lookup when it changed.
-package mobilityfeeds.rtbridge
+package transitdatalab.rtbridge
 
 import com.google.transit.realtime.GtfsRealtime.FeedEntity
 import com.google.transit.realtime.GtfsRealtime.FeedMessage

@@ -1,4 +1,4 @@
-package mobilityfeeds.sncf
+package transitdatalab.sncf
 
 import org.onebusaway.gtfs.impl.GtfsDaoImpl
 import org.onebusaway.gtfs.model.calendar.ServiceDate
