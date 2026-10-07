@@ -15,15 +15,13 @@ enum class SncfBrand(val extendedRouteType: Int, val stopIdBrand: String) {
     CAR_TER(701, "Car TER"), // regional bus
     CAR_A_RESERVATION(715, "Car à réservation"); // demand and response bus
 
-    // Basic GTFS route_type the extended type refines: 0 tram, 1 subway, 2 rail, 3 bus, 11 trolleybus
+    // Basic GTFS route_type the extended type refines: 2 rail, 3 bus, 0 tram
     val basicRouteType: Int
         get() = when (extendedRouteType / 100) {
-            1, 3 -> 2
-            4, 5, 6 -> 1
-            2, 7 -> 3
-            8 -> 11
+            1 -> 2
+            7 -> 3
             9 -> 0
-            else -> -1
+            else -> error("No basic route_type for extended type $extendedRouteType, map its family")
         }
 
     companion object {

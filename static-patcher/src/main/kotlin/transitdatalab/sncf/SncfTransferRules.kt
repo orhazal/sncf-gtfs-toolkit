@@ -1,7 +1,7 @@
 package transitdatalab.sncf
 
-import org.apache.commons.csv.CSVFormat
 import org.slf4j.LoggerFactory
+import transitdatalab.gtfs.HEADER_CSV
 import java.io.File
 import java.io.InputStreamReader
 import java.time.LocalDate
@@ -49,15 +49,12 @@ sealed class StationConnection(
     ) : StationConnection(minDelay, arrivalUic, departureUic)
 }
 
-enum class ConnectionType {
-    BY_MODE, BY_RICS, BY_BRAND
-}
-
 enum class Mode {
     F, R
 }
 
 private val logger = LoggerFactory.getLogger("SncfTransferRules")
+private val SEMICOLON_CSV = HEADER_CSV.builder().setDelimiter(';').get()
 
 // Rows outside the GTFS scope are dropped : unknown UIC, or train connection dates not overlapping feedDates (dates are capped to it)
 fun loadSncfTransferRules(gtfsStops: Set<String>, feedDates: ClosedRange<LocalDate>, sncfRulesZip: File): Pair<MutableList<TrainConnection>, MutableList<StationConnection>> {
@@ -70,10 +67,7 @@ fun loadSncfTransferRules(gtfsStops: Set<String>, feedDates: ClosedRange<LocalDa
         while (entry != null) {
             when (entry.name) {
                 "Export_TRAIN_CONNECTION_TIMES.csv" -> {
-                    val parser = CSVFormat.DEFAULT
-                        .withDelimiter(';')
-                        .withFirstRecordAsHeader()
-                        .parse(InputStreamReader(stream, Charsets.UTF_8))
+                    val parser = SEMICOLON_CSV.parse(InputStreamReader(stream, Charsets.UTF_8))
 
                     var outOfScopeUicCount = 0
                     var outOfScopeDatesCount = 0
@@ -110,10 +104,7 @@ fun loadSncfTransferRules(gtfsStops: Set<String>, feedDates: ClosedRange<LocalDa
                 }
 
                 "Export_CONNECTION_TIMES.csv" -> {
-                    val parser = CSVFormat.DEFAULT
-                        .withDelimiter(';')
-                        .withFirstRecordAsHeader()
-                        .parse(InputStreamReader(stream, Charsets.UTF_8))
+                    val parser = SEMICOLON_CSV.parse(InputStreamReader(stream, Charsets.UTF_8))
 
                     var outOfScopeUicCount = 0
 
@@ -133,38 +124,12 @@ fun loadSncfTransferRules(gtfsStops: Set<String>, feedDates: ClosedRange<LocalDa
                         val departureConnectionType = row["DEPARTURE_CONNECTION_TYPE"]?.takeIf { it.isNotBlank() }?.trim()
                         val minDelay = row["MIN_DELAY"].toInt()
 
-                        val connectionType = getAndValidateStationConnectionType(
+                        stationConnections += getAndValidateStationConnectionType(
                             arrivalMode, departureMode,
                             arrivalRics, departureRics,
                             arrivalConnectionType, departureConnectionType,
-                            arrivalUic, departureUic,
+                            minDelay, arrivalUic, departureUic,
                         ) ?: continue
-
-                        val connection = when (connectionType) {
-                            ConnectionType.BY_MODE -> StationConnection.ByMode(
-                                arrivalMode = arrivalMode!!,
-                                departureMode = departureMode!!,
-                                minDelay = minDelay,
-                                arrivalUic = arrivalUic,
-                                departureUic = departureUic,
-                            )
-                            ConnectionType.BY_RICS -> StationConnection.ByRics(
-                                arrivalRics = arrivalRics!!,
-                                departureRics = departureRics!!,
-                                minDelay = minDelay,
-                                arrivalUic = arrivalUic,
-                                departureUic = departureUic,
-                            )
-                            ConnectionType.BY_BRAND -> StationConnection.ByBrand(
-                                arrivalConnectionType = arrivalConnectionType!!,
-                                departureConnectionType = departureConnectionType!!,
-                                minDelay = minDelay,
-                                arrivalUic = arrivalUic,
-                                departureUic = departureUic,
-                            )
-                        }
-
-                        stationConnections.add(connection)
                     }
 
                     logger.warn("Filtered $outOfScopeUicCount out of scope rows from Export_CONNECTION_TIMES.csv")
@@ -178,7 +143,7 @@ fun loadSncfTransferRules(gtfsStops: Set<String>, feedDates: ClosedRange<LocalDa
 }
 
 // In Export_CONNECTION_TIMES.csv
-// Modes, RICS and ConnectionTypes are set exclusively and can't be set together
+// Modes, RICS and ConnectionTypes are set exclusively and can't be set together: the connection of the one pair set, null when invalid
 private fun getAndValidateStationConnectionType(
     arrivalMode: Mode?,
     departureMode: Mode?,
@@ -186,9 +151,10 @@ private fun getAndValidateStationConnectionType(
     departureRics: String?,
     arrivalConnectionType: String?,
     departureConnectionType: String?,
+    minDelay: Int,
     arrivalUic: String,
     departureUic: String,
-): ConnectionType? {
+): StationConnection? {
     val bothModesSet = arrivalMode != null && departureMode != null
     val bothRicsSet = arrivalRics != null && departureRics != null
     val bothConnectionTypesSet = arrivalConnectionType != null && departureConnectionType != null
@@ -208,9 +174,9 @@ private fun getAndValidateStationConnectionType(
     }
 
     return when {
-        bothModesSet -> ConnectionType.BY_MODE
-        bothRicsSet -> ConnectionType.BY_RICS
-        bothConnectionTypesSet -> ConnectionType.BY_BRAND
+        bothModesSet -> StationConnection.ByMode(arrivalMode, departureMode, minDelay, arrivalUic, departureUic)
+        bothRicsSet -> StationConnection.ByRics(arrivalRics, departureRics, minDelay, arrivalUic, departureUic)
+        bothConnectionTypesSet -> StationConnection.ByBrand(arrivalConnectionType, departureConnectionType, minDelay, arrivalUic, departureUic)
         else -> error("Unreachable after validation")
     }
 }

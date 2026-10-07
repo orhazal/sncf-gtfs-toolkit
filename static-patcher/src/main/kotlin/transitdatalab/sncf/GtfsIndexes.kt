@@ -4,7 +4,7 @@ import org.onebusaway.gtfs.impl.GtfsDaoImpl
 import org.onebusaway.gtfs.model.calendar.ServiceDate
 import java.time.LocalDate
 import java.util.EnumMap
-import org.apache.commons.csv.CSVFormat
+import transitdatalab.gtfs.HEADER_CSV
 import java.io.File
 
 private val TRIP_ID_REGEX = Regex("""(\d{4})_([FR]):""") // RICS, mode
@@ -100,5 +100,5 @@ fun serviceIdAfter(serviceId: String, offset: Int = 1): String =
 
 // GTFS stop uic8 -> IDH uic7, for the stations where dropping the last digit gives the wrong code
 fun getUicReferential(): Map<String, String> = File("data/unusual_uic.csv").bufferedReader().use { reader ->
-    CSVFormat.DEFAULT.builder().setHeader().setSkipHeaderRecord(true).get().parse(reader).associate { it["uic8"] to it["uic7"] }
+    HEADER_CSV.parse(reader).associate { it["uic8"] to it["uic7"] }
 }

@@ -15,6 +15,7 @@ import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
+import kotlin.jvm.optionals.getOrDefault
 
 private val logger = LoggerFactory.getLogger("main")
 private val httpClient = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.NORMAL).build()
@@ -102,6 +103,6 @@ fun download(name: String, url: String): File {
         "Download failed ($url): HTTP ${response.statusCode()}"
     }
     // the version of what was actually written, for the release workflow to compare with what it was asked to release
-    File("${local.path}.version").writeText(response.headers().firstValue("Last-Modified").orElse(""))
+    File("${local.path}.version").writeText(response.headers().firstValue("Last-Modified").getOrDefault(""))
     return local
 }

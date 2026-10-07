@@ -28,15 +28,15 @@ data class Transfer(
     val priority: PrioritySource,
 )
 
-// Highest priority is zero
-enum class PrioritySource(val value: Int) {
-    TRAIN_NUMBER(0),
+// Declaration order is the priority, highest first: deduplicateByPriority compares the entries, do not reorder them
+enum class PrioritySource {
+    TRAIN_NUMBER,
     // RICS or BRAND_CARRIER
-    ONE_TO_ONE(10),
-    ONE_TO_ALL(20),
-    ALL_TO_ALL(30),
+    ONE_TO_ONE,
+    ONE_TO_ALL,
+    ALL_TO_ALL,
     // By mode : (F)erré or (R)outier
-    MODE(40),
+    MODE,
 }
 
 private val logger = LoggerFactory.getLogger("transfers")
@@ -244,7 +244,7 @@ private fun areGtfsAndIdhBrandEquivalent(brandFromIdh: String, brandFromGtfs: Sn
     }
 
 // Regroupe sur le tuple d'identité GTFS
-// Pour chaque groupe, on garde le transfert de plus haute priorité (plus petite valeur de PrioritySource.value)
+// Pour chaque groupe, on garde le transfert de plus haute priorité (premier dans l'ordre de PrioritySource)
 // Les groupes à un seul élément conservent leur unique élément
 // Les groupes à multiples éléments (donc priorité égale comme 2 règles en ONE_TO_ALL_RICS) conservent l'élément avec le temps de transfert le plus grand (le plus restrictif)
 fun deduplicateByPriority(transfers: Set<Transfer>): Set<Transfer> =
@@ -255,12 +255,7 @@ fun deduplicateByPriority(transfers: Set<Transfer>): Set<Transfer> =
                 it.fromRouteId, it.toRouteId, it.serviceId, it.transferType,
             )
         }
-        .map { (_, group) ->
-            val minValue = group.minOf { it.priority.value }
-            group
-                .filter { it.priority.value == minValue }
-                .maxBy { it.minTransferTime ?: -1 }
-        }
+        .map { (_, group) -> group.minWith(compareBy<Transfer> { it.priority }.thenByDescending { it.minTransferTime ?: -1 }) }
         .toSet()
 
 private fun writeTransfersFile(transfers: Set<Transfer>, output: File) {
